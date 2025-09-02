@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ClientStatus {
+  ACTIVE
+  PAUSED
+}
+
+enum RequestStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
+enum RequestType {
+  ONBOARDING
+  SUPPORT
+}
+
+model Client {
+  id          String          @id @default(cuid())
+  name        String
+  ownerEmail  String
+  status      ClientStatus    @default(ACTIVE)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  managers    ClientManager[]
+  requests    Request[]
+}
+
+model ClientManager {
+  id        String  @id @default(cuid())
+  clientId  String
+  email     String
+  createdAt DateTime @default(now())
+
+  client    Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, email])
+}
+
+model Request {
+  id             String        @id @default(cuid())
+  type           RequestType
+  subject        String
+  requesterEmail String
+  status         RequestStatus @default(OPEN)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  clientId       String?
+  client         Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  notes          RequestNote[]
+}
+
+model RequestNote {
+  id        String   @id @default(cuid())
+  requestId String
+  author    String
+  text      String
+  createdAt DateTime @default(now())
+
+  request   Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+}
+
+model Settings {
+  id              Int      @id @default(1)
+  supportEmail    String
+  webhookUrl      String
+  brandHue        Int      @default(212)
+  allowSelfSignup Boolean  @default(true)
+
+  @@unique([id])
+}
+
