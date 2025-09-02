@@ -8,7 +8,6 @@ import './index.css'
 
 // 👇 Load Clerk publishable key from .env.local
 const pk = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string
-const frontendApi = import.meta.env.VITE_CLERK_FRONTEND_API as string | undefined
 
 if (!pk) {
   throw new Error(
@@ -20,10 +19,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ClerkProvider
       publishableKey={pk}
-      // If provided, this forces Clerk to use the specified
-      // Frontend API domain (handy to bypass a misconfigured
-      // custom domain).
-      frontendApi={frontendApi}
       routerPush={(to) => router.navigate(to)}
       routerReplace={(to) => router.navigate(to, { replace: true })}
     >
