@@ -65,3 +65,22 @@ input::placeholder, textarea::placeholder {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
+
+/* Assistant open animations */
+.assistant-panel-enter {
+  animation: assistantPop .22s ease-out;
+  transform-origin: 85% 100%;
+}
+@keyframes assistantPop {
+  0% { opacity: 0; transform: translateY(8px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.assistant-fab-open {
+  animation: fabPop .18s ease-out;
+}
+@keyframes fabPop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}

@@ -27,7 +27,7 @@ export default function AssistantWidget() {
           role="dialog"
           aria-labelledby={`${ids.panel}-label`}
           aria-modal="true"
-          className="mb-3 w-[360px] overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-950/90 shadow-2xl backdrop-blur"
+          className="assistant-panel-enter mb-3 w-[360px] overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-950/90 shadow-2xl backdrop-blur"
         >
           <div className="flex items-center justify-between border-b border-neutral-800 px-3 py-2">
             <div id={`${ids.panel}-label`} className="flex items-center gap-2 text-sm font-medium">
@@ -139,7 +139,10 @@ export default function AssistantWidget() {
         aria-expanded={open}
         aria-controls={ids.panel}
         onClick={() => setOpen((v) => !v)}
-        className="group inline-flex h-14 w-14 items-center justify-center rounded-full border border-neutral-800 bg-neutral-900/40 shadow-xl ring-1 ring-black/20 backdrop-blur transition hover:border-neutral-700 hover:bg-neutral-800/50"
+        className={[
+          'group inline-flex h-14 w-14 items-center justify-center rounded-full border border-neutral-800 bg-neutral-900/40 shadow-xl ring-1 ring-black/20 backdrop-blur transition hover:border-neutral-700 hover:bg-neutral-800/50',
+          open ? 'assistant-fab-open' : '',
+        ].join(' ')}
         title="Open FirstClass Assistant"
       >
         <img
