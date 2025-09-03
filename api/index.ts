@@ -1,4 +1,5 @@
 import express from 'express'
+import OpenAI from 'openai'
 import type { Request, Response, NextFunction } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { z } from 'zod'
@@ -21,6 +22,33 @@ function requireAdminish(req: Request, res: Response, next: NextFunction) {
 }
 
 app.get('/api/healthz', (_req, res) => res.json({ ok: true }))
+
+// Simple AI assistant endpoint
+app.post('/api/assistant', async (req: Request, res: Response) => {
+  try {
+    const apiKey = process.env.OPENAI_API_KEY
+    if (!apiKey) return res.status(501).json({ error: 'AI not configured (missing OPENAI_API_KEY)' })
+
+    const { messages } = req.body as { messages?: { role: 'user' | 'assistant' | 'system'; content: string }[] }
+    const safeMessages = Array.isArray(messages) ? messages : []
+
+    const client = new OpenAI({ apiKey })
+    const sys = {
+      role: 'system' as const,
+      content: 'You are the helpful FirstClass dashboard assistant. Be concise and actionable.'
+    }
+    const completion = await client.chat.completions.create({
+      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+      messages: [sys, ...safeMessages],
+      temperature: 0.2,
+    })
+    const reply = completion.choices[0]?.message?.content || ''
+    res.json({ reply })
+  } catch (err: any) {
+    console.error('assistant_error', err)
+    res.status(500).json({ error: err?.message || 'Unknown error' })
+  }
+})
 
 // ----- Settings -----
 app.get('/api/admin/settings', requireAdminish, async (_req, res) => {
@@ -194,4 +222,3 @@ app.post('/api/admin/requests/:id/notes', requireAdminish, async (req, res) => {
 
 // Vercel handler export
 export default app
-
