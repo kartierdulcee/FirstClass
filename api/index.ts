@@ -28,14 +28,12 @@ app.post('/api/assistant', async (req: Request, res: Response) => {
     const apiKey = process.env.OPENAI_API_KEY
     if (!apiKey) return res.status(501).json({ error: 'AI not configured (missing OPENAI_API_KEY)' })
 
-    const { messages } = req.body as { messages?: { role: 'user' | 'assistant' | 'system'; content: string }[] }
+    const { messages, system } = req.body as { messages?: { role: 'user' | 'assistant' | 'system'; content: string }[]; system?: string }
     const safeMessages = Array.isArray(messages) ? messages : []
 
     const client = new OpenAI({ apiKey })
-    const sys = {
-      role: 'system' as const,
-      content: 'You are the helpful FirstClass dashboard assistant. Be concise and actionable.'
-    }
+    const defaultSystem = 'You are the helpful FirstClass dashboard assistant. Be concise and actionable.'
+    const sys = { role: 'system' as const, content: system && typeof system === 'string' ? system : defaultSystem }
     const completion = await client.chat.completions.create({
       model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
       messages: [sys, ...safeMessages],

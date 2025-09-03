@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useClerk, useUser } from '@clerk/clerk-react'
 import {
   LayoutDashboard,
@@ -13,10 +13,12 @@ export default function DashboardLayout() {
   const { signOut } = useClerk()
   const { user } = useUser()
   const nav = useNavigate()
+  const location = useLocation()
 
   const tabs = [
     { name: 'Overview', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Content', path: '/dashboard/content', icon: FileText },
+    { name: 'Content Lab', path: '/dashboard/content-lab', icon: FileText },
     { name: 'Analytics', path: '/dashboard/analytics', icon: BarChart2 },
     { name: 'Settings', path: '/dashboard/settings', icon: Settings },
   ]
@@ -97,7 +99,10 @@ export default function DashboardLayout() {
           <Outlet />
         </div>
         <FounderBanner />
-        <AssistantWidget />
+        {/* Hide assistant while in Content Lab */}
+        {!location.pathname.startsWith('/dashboard/content-lab') && (
+          <AssistantWidget />
+        )}
       </main>
     </div>
   )

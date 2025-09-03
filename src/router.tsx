@@ -11,6 +11,7 @@ import Signup from './pages/Signup'
 
 import DashboardHome from './pages/dashboard/Home'
 import Content from './pages/dashboard/Content'
+import ContentLab from './pages/dashboard/ContentLab'
 import Analytics from './pages/dashboard/Analytics'
 import Settings from './pages/dashboard/Settings'
 
@@ -42,6 +43,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <DashboardHome /> },
           { path: 'content', element: <Content /> },
+          { path: 'content-lab', element: <ContentLab /> },
           { path: 'analytics', element: <Analytics /> },
           { path: 'settings', element: <Settings /> },
           { path: '*', element: <Navigate to="/dashboard" replace /> },
