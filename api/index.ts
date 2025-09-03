@@ -8,7 +8,6 @@ import { clerkMiddleware, getAuth } from '@clerk/express'
 const prisma = new PrismaClient()
 const app = express()
 app.use(express.json())
-app.use(clerkMiddleware())
 
 function requireAdminish(req: Request, res: Response, next: NextFunction) {
   const { userId, sessionClaims } = getAuth(req)
@@ -49,6 +48,9 @@ app.post('/api/assistant', async (req: Request, res: Response) => {
     res.status(500).json({ error: err?.message || 'Unknown error' })
   }
 })
+
+// Apply Clerk auth to admin endpoints only
+app.use('/api/admin', clerkMiddleware())
 
 // ----- Settings -----
 app.get('/api/admin/settings', requireAdminish, async (_req, res) => {
