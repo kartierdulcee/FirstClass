@@ -7,6 +7,7 @@ import {
   Settings,
 } from 'lucide-react'
 import FounderBanner from '../components/FounderBanner'
+import AssistantWidget from '../components/AssistantWidget'
 
 export default function DashboardLayout() {
   const { signOut } = useClerk()
@@ -96,6 +97,7 @@ export default function DashboardLayout() {
           <Outlet />
         </div>
         <FounderBanner />
+        <AssistantWidget />
       </main>
     </div>
   )

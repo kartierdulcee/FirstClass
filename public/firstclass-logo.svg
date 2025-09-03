@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Placeholder FirstClass logo: stylized FC monogram with transparent bg -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0374FF"/>
+      <stop offset="100%" stop-color="#8AB8FF"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#0374FF" flood-opacity="0.45" />
+    </filter>
+  </defs>
+  <g filter="url(#glow)">
+    <path d="M64 72C64 66.4772 68.4772 62 74 62H166C170.418 62 174 65.5817 174 70C174 74.4183 170.418 78 166 78H90V120H154C158.418 120 162 123.582 162 128C162 132.418 158.418 136 154 136H90V186C90 190.418 86.4183 194 82 194C77.5817 194 74 190.418 74 186V72Z" fill="url(#g)"/>
+    <path d="M182 78C186.418 78 190 81.5817 190 86V170C190 174.418 186.418 178 182 178H132C127.582 178 124 174.418 124 170C124 165.582 127.582 162 132 162H174V86C174 81.5817 177.582 78 182 78Z" fill="url(#g)"/>
+  </g>
+</svg>
+
