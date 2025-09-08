@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "gen:icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
     "openai": "^4.58.1",
@@ -36,6 +37,7 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.39.1",
     "vite": "^7.1.2",
-    "prisma": "^5.18.0"
+    "prisma": "^5.18.0",
+    "sharp": "^0.33.4"
   }
 }
