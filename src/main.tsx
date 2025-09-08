@@ -19,7 +19,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ClerkProvider
       publishableKey={pk}
-      fallbackRedirectUrl="/dashboard"
+      signInFallbackRedirectUrl="/dashboard"
+      signUpFallbackRedirectUrl="/dashboard"
       routerPush={(to) => router.navigate(to)}
       routerReplace={(to) => router.navigate(to, { replace: true })}
     >
