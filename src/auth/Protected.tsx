@@ -27,7 +27,7 @@ export default function Protected() {
         </SignedIn>
 
         <SignedOut>
-          <RedirectToSignIn redirectUrl={redirectUrl} />
+          <RedirectToSignIn {...({ forceRedirectUrl: redirectUrl } as any)} />
         </SignedOut>
       </ClerkLoaded>
     </>
