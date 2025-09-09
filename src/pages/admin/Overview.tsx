@@ -208,7 +208,7 @@ export default function AdminOverview() {
       </div>
       {error && (
         <div className="rounded-lg border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-xs text-amber-200">
-          Showing mock data — API error: {error}
+          API error: {error}
         </div>
       )}
     </div>

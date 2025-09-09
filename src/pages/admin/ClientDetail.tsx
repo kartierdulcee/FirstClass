@@ -30,12 +30,8 @@ export default function ClientDetail() {
         setTimeline(tl)
         setManagers(mgrs)
       } catch (e) {
-        // Fallback mocks
-        setTimeline([
-          { id: 'e1', ts: new Date(Date.now() - 3600_000).toISOString(), who: 'system', text: 'Workspace created' },
-          { id: 'e2', ts: new Date(Date.now() - 1800_000).toISOString(), who: 'founder@firstclass.ai', text: 'Plan set to Pro' },
-        ])
-        setManagers(['ops@firstclass.ai'])
+        setTimeline([])
+        setManagers([])
       } finally {
         if (alive) setLoading(false)
       }

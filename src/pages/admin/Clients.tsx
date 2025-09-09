@@ -214,7 +214,7 @@ export default function Clients() {
 
       {error && (
         <div className="rounded-lg border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-xs text-amber-200">
-          Showing mock data — API error: {error}
+          API error: {error}
         </div>
       )}
 
@@ -333,9 +333,7 @@ export default function Clients() {
         </div>
       )}
 
-      <p className="text-neutral-400 text-xs">
-        * In production, these actions call your API and the table will paginate.
-      </p>
+      {/* Removed sample-data note; this page now reflects live API data. */}
     </div>
   )
 }

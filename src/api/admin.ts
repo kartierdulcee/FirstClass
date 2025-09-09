@@ -31,10 +31,9 @@ export function useAdminOverview(range: '7d' | '30d' | '90d' = '7d') {
         setData(res)
         setError(null)
       } catch (e) {
-        // Fallback to mock data if API not ready
         if (!alive) return
         setError((e as Error).message)
-        setData(mockOverview)
+        setData(null)
       } finally {
         if (alive) setLoading(false)
       }
@@ -63,28 +62,4 @@ export function useAdminOverview(range: '7d' | '30d' | '90d' = '7d') {
   return { loading, error, data: formatted }
 }
 
-const mockOverview: AdminOverviewData = {
-  kpis: {
-    totalClients: 128,
-    activeWorkspaces: 212,
-    pendingRequests: 9,
-    mrrUsd: 86400,
-  },
-  weeklyJobs: [8, 9, 7, 11, 12, 10, 14],
-  health: [
-    { name: 'API', status: 'healthy' },
-    { name: 'Webhooks', status: 'degraded' },
-    { name: 'Queues', status: 'healthy' },
-    { name: 'Worker', status: 'healthy' },
-  ],
-  topClients: [
-    { name: 'GlowHaus MedSpa', owner: 'ava@glowhaus.com', posts: 842, status: 'active' },
-    { name: 'Nova Studios', owner: 'jordan@novastudios.io', posts: 733, status: 'active' },
-    { name: 'Radiant Aesthetics', owner: 'maya@radiant.co', posts: 321, status: 'paused' },
-  ],
-  recent: [
-    { when: '5m ago', what: 'New onboarding request', who: 'bruce@northpeak.io' },
-    { when: '1h ago', what: 'Workspace created', who: 'alina@hauslabs.com' },
-    { when: 'Yesterday', what: 'Plan upgraded to Pro', who: 'ops@novastudios.io' },
-  ],
-}
+// Removed mockOverview: we now rely solely on the API.

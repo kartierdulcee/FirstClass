@@ -29,30 +29,7 @@ type Draft = {
   status: 'draft' | 'queued' | 'publishing' | 'published'
 }
 
-const initialDrafts: Draft[] = [
-  {
-    id: 'd1',
-    channel: 'instagram',
-    type: 'reel',
-    text: 'Turning one podcast into 12 clips. System > motivation.',
-    status: 'queued',
-    scheduledAt: new Date(Date.now() + 3600_000).toISOString(),
-  },
-  {
-    id: 'd2',
-    channel: 'twitter',
-    type: 'thread',
-    text: 'Hook → Proof → Process → CTA. Simple threads that convert.',
-    status: 'draft',
-  },
-  {
-    id: 'd3',
-    channel: 'youtube',
-    type: 'video',
-    text: '30-day content sprint (end-to-end walkthrough).',
-    status: 'draft',
-  },
-]
+const initialDrafts: Draft[] = []
 
 export default function ContentPage() {
   const [drafts, setDrafts] = useState<Draft[]>(initialDrafts)
@@ -167,6 +144,14 @@ export default function ContentPage() {
 
       {/* Queue */}
       <div className="grid gap-4 lg:grid-cols-2">
+        {filtered.length === 0 && (
+          <div className="rounded-2xl border border-neutral-800/80 bg-neutral-900/70 p-8 text-center text-neutral-300">
+            <div>No drafts yet.</div>
+            <button onClick={() => setShowNew(true)} className="mt-3 inline-flex items-center gap-2 rounded-lg border border-blue-700/50 bg-blue-900/30 px-3 py-2 text-sm text-blue-200 hover:bg-blue-800/50">
+              <Plus size={16} /> Create your first draft
+            </button>
+          </div>
+        )}
         {filtered.map((d) => (
           <div key={d.id} className="rounded-2xl border border-neutral-800/80 bg-neutral-900/70 p-4">
             <div className="flex items-center justify-between">
@@ -192,7 +177,7 @@ export default function ContentPage() {
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => onChange(d.id, { media: 'dummy.jpg' })}
+                  onClick={() => alert('Media upload coming soon')}
                   className="rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs hover:bg-neutral-800 inline-flex items-center gap-1"
                 >
                   <UploadCloud size={14} />

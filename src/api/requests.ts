@@ -54,7 +54,7 @@ export function useAdminRequests(query: {
       } catch (e) {
         if (!alive) return
         setError((e as Error).message)
-        setData(mockRequests)
+        setData([])
       } finally {
         if (!alive) return
         if (loading) setLoading(false)
@@ -90,37 +90,4 @@ export function useAdminRequests(query: {
   return { loading, fetching, error, rows: paged, total, refetch: () => setVersion((v) => v + 1) }
 }
 
-export const mockRequests: AdminRequest[] = [
-  {
-    id: 'rq_1001',
-    type: 'onboarding',
-    requester: 'bruce@northpeak.io',
-    subject: 'New brand onboarding',
-    createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-    status: 'open',
-  },
-  {
-    id: 'rq_1002',
-    type: 'support',
-    requester: 'alina@hauslabs.com',
-    subject: 'Instagram token expired',
-    createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-    status: 'in_progress',
-  },
-  {
-    id: 'rq_1003',
-    type: 'support',
-    requester: 'ops@novastudios.io',
-    subject: 'Bulk import stuck at 90%',
-    createdAt: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString(),
-    status: 'open',
-  },
-  {
-    id: 'rq_1004',
-    type: 'onboarding',
-    requester: 'maya@radiant.co',
-    subject: 'Migrate content from Buffer',
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'closed',
-  },
-]
+// Removed mock requests: results now come only from the API.

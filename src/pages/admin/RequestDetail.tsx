@@ -1,5 +1,5 @@
 import { Link, useParams } from 'react-router-dom'
-import { useAdminRequests, mockRequests, type AdminRequest, type RequestStatus } from '../../api/requests'
+import { useAdminRequests, type AdminRequest, type RequestStatus } from '../../api/requests'
 import { useApi } from '../../api/client'
 import { useEffect, useState } from 'react'
 import { useToast } from '../../components/toast'
@@ -11,7 +11,7 @@ export default function RequestDetail() {
   const { rows } = useAdminRequests()
   const api = useApi()
   const { show } = useToast()
-  const req = rows.find((r) => r.id === id) ?? (mockRequests.find((r) => r.id === id) as AdminRequest | undefined)
+  const req = rows.find((r) => r.id === id) as AdminRequest | undefined
 
   const [timeline, setTimeline] = useState<TimelineEvent[]>([])
   const [note, setNote] = useState('')
@@ -27,11 +27,7 @@ export default function RequestDetail() {
         if (!alive) return
         setTimeline(data)
       } catch {
-        // Fallback timeline
-        setTimeline([
-          { id: 'e1', ts: new Date(Date.now() - 60 * 60 * 1000).toISOString(), who: 'system', text: 'Request created' },
-          { id: 'e2', ts: new Date(Date.now() - 30 * 60 * 1000).toISOString(), who: 'ops@firstclass.ai', text: 'Acknowledged' },
-        ])
+        setTimeline([])
       } finally {
         if (alive) setLoading(false)
       }

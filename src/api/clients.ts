@@ -47,7 +47,7 @@ export function useAdminClients(query: {
       } catch (e) {
         if (!alive) return
         setError((e as Error).message)
-        setData(mockClients)
+        setData([])
       } finally {
         if (!alive) return
         if (loading) setLoading(false)
@@ -82,9 +82,4 @@ export function useAdminClients(query: {
   return { loading, fetching, error, rows: paged, total, refetch: () => setVersion((v) => v + 1) }
 }
 
-const mockClients: AdminClient[] = [
-  { id: 'cl_001', name: 'GlowHaus MedSpa', owner: 'ava@glowhaus.com', status: 'active' },
-  { id: 'cl_002', name: 'Nova Studios', owner: 'jordan@novastudios.io', status: 'active' },
-  { id: 'cl_003', name: 'Radiant Aesthetics', owner: 'maya@radiant.co', status: 'paused' },
-  { id: 'cl_004', name: 'Aero Performance', owner: 'dax@aero-performance.com', status: 'active' },
-]
+// Removed mock clients: results now come only from the API.
