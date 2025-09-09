@@ -5,8 +5,18 @@
   --brand: 212 100% 52%;
 }
 
-/* Smooth anchor scroll */
-html { scroll-behavior: smooth; }
+/* Base page behavior and background */
+html {
+  scroll-behavior: smooth;
+  background: #0a0a0a; /* Tailwind neutral-950 */
+  min-height: 100%;
+  overflow-x: hidden; /* avoid sideways scroll causing gray gutters */
+}
+body {
+  background: #0a0a0a; /* ensure iOS rubber-band shows dark, not gray */
+  min-height: 100%;
+  overscroll-behavior: none; /* reduce over-bounce glow */
+}
 
 /* Ensure form controls render light text on dark backgrounds */
 input, select, textarea {
