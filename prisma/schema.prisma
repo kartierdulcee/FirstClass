@@ -78,3 +78,20 @@ model Settings {
   @@unique([id])
 }
 
+// Stores OAuth tokens for user social connections
+model SocialAccount {
+  id           String   @id @default(cuid())
+  userId       String
+  provider     String
+  accountId    String
+  handle       String?
+  accessToken  String
+  refreshToken String?
+  scope        String?
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([userId, provider])
+  @@unique([userId, provider, accountId], name: "userId_provider_accountId")
+}

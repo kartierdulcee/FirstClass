@@ -1,4 +1,5 @@
 import express from 'express'
+import cookieParser from 'cookie-parser'
 import OpenAI from 'openai'
 import type { Request, Response, NextFunction } from 'express'
 import { PrismaClient } from '@prisma/client'
@@ -8,6 +9,7 @@ import { clerkMiddleware, getAuth } from '@clerk/express'
 const prisma = new PrismaClient()
 const app = express()
 app.use(express.json())
+app.use(cookieParser())
 
 function requireAdminish(req: Request, res: Response, next: NextFunction) {
   const { userId, sessionClaims } = getAuth(req)
@@ -45,6 +47,145 @@ app.post('/api/assistant', async (req: Request, res: Response) => {
     console.error('assistant_error', err)
     res.status(500).json({ error: err?.message || 'Unknown error' })
   }
+})
+
+// ---------- OAuth Social Connections (user) ----------
+import crypto from 'node:crypto'
+
+type ProviderKey = 'linkedin' | 'google'
+const providers: Record<ProviderKey, {
+  authorizeUrl: string
+  tokenUrl: string
+  scope: string
+  clientId?: string
+  clientSecret?: string
+}> = {
+  linkedin: {
+    authorizeUrl: 'https://www.linkedin.com/oauth/v2/authorization',
+    tokenUrl: 'https://www.linkedin.com/oauth/v2/accessToken',
+    scope: 'r_liteprofile r_emailaddress w_member_social',
+    clientId: process.env.LINKEDIN_CLIENT_ID,
+    clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+  },
+  google: {
+    authorizeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+    tokenUrl: 'https://oauth2.googleapis.com/token',
+    scope: 'https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/youtube.upload',
+    clientId: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  },
+}
+
+const OAUTH_BASE = process.env.OAUTH_REDIRECT_BASE
+
+// Clerk auth for user endpoints
+app.use('/api/social', clerkMiddleware())
+
+app.get('/api/social/providers', (_req, res) => {
+  const available = Object.entries(providers).filter(([, p]) => p.clientId && p.clientSecret).map(([k]) => k)
+  res.json({ providers: available })
+})
+
+app.get('/api/social/connections', async (req, res) => {
+  const { userId } = getAuth(req)
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' })
+  const rows = await prisma.socialAccount.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } })
+  res.json(rows.map(r => ({ id: r.id, provider: r.provider, handle: r.handle, createdAt: r.createdAt })))
+})
+
+// Start OAuth: redirects to provider
+app.get('/api/social/:provider/auth', (req, res) => {
+  const { userId } = getAuth(req)
+  if (!userId) return res.status(401).send('Unauthorized')
+  const provider = req.params.provider as ProviderKey
+  const cfg = providers[provider]
+  if (!cfg || !cfg.clientId || !cfg.clientSecret) return res.status(501).send('Provider not configured')
+  if (!OAUTH_BASE) return res.status(501).send('OAUTH_REDIRECT_BASE not set')
+  const redirectUri = `${OAUTH_BASE.replace(/\/$/, '')}/api/social/${provider}/callback`
+  const state = crypto.randomBytes(16).toString('hex')
+  res.cookie(`oauth_state_${provider}`, `${state}:${userId}`, { httpOnly: true, secure: true, sameSite: 'lax', maxAge: 10 * 60 * 1000, path: '/' })
+  const url = new URL(cfg.authorizeUrl)
+  url.searchParams.set('response_type', 'code')
+  url.searchParams.set('client_id', cfg.clientId)
+  url.searchParams.set('redirect_uri', redirectUri)
+  url.searchParams.set('scope', cfg.scope)
+  url.searchParams.set('state', state)
+  if (provider === 'google') {
+    url.searchParams.set('access_type', 'offline')
+    url.searchParams.set('prompt', 'consent')
+  }
+  res.redirect(url.toString())
+})
+
+// OAuth callback: exchanges code for tokens and stores connection
+app.get('/api/social/:provider/callback', async (req, res) => {
+  const provider = req.params.provider as ProviderKey
+  const cfg = providers[provider]
+  if (!cfg || !cfg.clientId || !cfg.clientSecret) return res.status(501).send('Provider not configured')
+  if (!OAUTH_BASE) return res.status(501).send('OAUTH_REDIRECT_BASE not set')
+  const { code, state } = req.query as { code?: string; state?: string }
+  const cookieState = (req.cookies?.[`oauth_state_${provider}`] || '') as string
+  res.clearCookie(`oauth_state_${provider}`, { path: '/' })
+  const [savedState, userId] = cookieState.split(':')
+  if (!code || !state || state !== savedState || !userId) {
+    return res.status(400).send('Invalid state')
+  }
+  const redirectUri = `${OAUTH_BASE.replace(/\/$/, '')}/api/social/${provider}/callback`
+  // Exchange code for token
+  const body = new URLSearchParams()
+  body.set('grant_type', 'authorization_code')
+  body.set('code', code)
+  body.set('redirect_uri', redirectUri)
+  body.set('client_id', cfg.clientId)
+  body.set('client_secret', cfg.clientSecret)
+  try {
+    const tokenRes = await fetch(cfg.tokenUrl, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body })
+    const token = await tokenRes.json() as any
+    if (!tokenRes.ok) {
+      console.error('oauth_token_error', token)
+      return res.status(502).send('Token exchange failed')
+    }
+    const accessToken = token.access_token as string
+    const refreshToken = (token.refresh_token as string | undefined) ?? null
+    const expiresAt = token.expires_in ? new Date(Date.now() + Number(token.expires_in) * 1000) : null
+
+    // Fetch basic profile for handle/accountId
+    let accountId = 'unknown'
+    let handle: string | null = null
+    if (provider === 'linkedin') {
+      const me = await fetch('https://api.linkedin.com/v2/me', { headers: { Authorization: `Bearer ${accessToken}` } })
+      const mj = await me.json() as any
+      accountId = mj.id || 'unknown'
+      handle = mj.localizedFirstName ? `${mj.localizedFirstName} ${mj.localizedLastName || ''}`.trim() : null
+    } else if (provider === 'google') {
+      const ch = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true', { headers: { Authorization: `Bearer ${accessToken}` } })
+      const cj = await ch.json() as any
+      const item = cj.items?.[0]
+      accountId = item?.id || 'unknown'
+      handle = item?.snippet?.title || null
+    }
+
+    await prisma.socialAccount.upsert({
+      where: { userId_provider_accountId: { userId, provider, accountId } as any },
+      update: { accessToken, refreshToken: refreshToken ?? undefined, scope: token.scope || undefined, expiresAt: (expiresAt as any) ?? undefined, handle: handle ?? undefined },
+      create: { userId, provider, accountId, handle: handle ?? undefined, accessToken, refreshToken: refreshToken ?? undefined, scope: token.scope || undefined, expiresAt: (expiresAt as any) ?? undefined },
+    } as any)
+
+    res.redirect('/dashboard/settings?connected=' + provider)
+  } catch (err) {
+    console.error('oauth_callback_error', err)
+    res.status(500).send('OAuth failed')
+  }
+})
+
+app.delete('/api/social/:id', async (req, res) => {
+  const { userId } = getAuth(req)
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' })
+  const { id } = req.params
+  const row = await prisma.socialAccount.findUnique({ where: { id } })
+  if (!row || row.userId !== userId) return res.status(404).json({ error: 'Not found' })
+  await prisma.socialAccount.delete({ where: { id } })
+  res.json({ ok: true })
 })
 
 // Apply Clerk auth to admin endpoints only

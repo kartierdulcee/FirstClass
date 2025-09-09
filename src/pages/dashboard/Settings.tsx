@@ -1,9 +1,31 @@
 import { useUser, useClerk } from '@clerk/clerk-react'
+import { useEffect, useState } from 'react'
+import { useApi } from '../../api/client'
 import { Mail, User, Globe, Settings as Cog, Link as LinkIcon, Trash2 } from 'lucide-react'
 
 export default function SettingsPage() {
   const { user } = useUser()
   const { openUserProfile, signOut } = useClerk()
+  const api = useApi()
+  const [connections, setConnections] = useState<{ id: string; provider: string; handle?: string; createdAt: string }[]>([])
+  const [providers, setProviders] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let alive = true
+    ;(async () => {
+      try {
+        const p = await api<{ providers: string[] }>('/social/providers')
+        const c = await api<{ id: string; provider: string; handle?: string; createdAt: string }[]>('/social/connections')
+        if (!alive) return
+        setProviders(p.providers)
+        setConnections(c)
+      } finally {
+        if (alive) setLoading(false)
+      }
+    })()
+    return () => { alive = false }
+  }, [api])
 
   return (
     <div className="space-y-6">
@@ -42,27 +64,41 @@ export default function SettingsPage() {
       </Panel>
 
       <Panel title="Connected channels" icon={LinkIcon}>
-        <ul className="space-y-2 text-sm text-neutral-400">
-          <li className="flex items-center justify-between rounded-lg border border-neutral-800/70 bg-neutral-950/60 p-3">
-            <span>Instagram</span>
-            <StatusBadge status="connected" />
-          </li>
-          <li className="flex items-center justify-between rounded-lg border border-neutral-800/70 bg-neutral-950/60 p-3">
-            <span>Twitter/X</span>
-            <StatusBadge status="connected" />
-          </li>
-          <li className="flex items-center justify-between rounded-lg border border-neutral-800/70 bg-neutral-950/60 p-3">
-            <span>YouTube</span>
-            <StatusBadge status="needs_reauth" />
-          </li>
-          <li className="flex items-center justify-between rounded-lg border border-neutral-800/70 bg-neutral-950/60 p-3">
-            <span>LinkedIn</span>
-            <StatusBadge status="disconnected" />
-          </li>
-        </ul>
-        <button className="mt-3 w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm hover:bg-neutral-800">
-          Manage connections
-        </button>
+        <div className="text-sm text-neutral-300">
+          {loading ? (
+            <div className="h-10 w-32 skeleton" />
+          ) : (
+            <>
+              <ul className="space-y-2">
+                {connections.map((c) => (
+                  <li key={c.id} className="flex items-center justify-between rounded-lg border border-neutral-800/70 bg-neutral-950/60 p-3">
+                    <span className="capitalize">{c.provider} {c.handle ? `• ${c.handle}` : ''}</span>
+                    <button
+                      onClick={async () => { await api(`/social/${c.id}`, { method: 'DELETE' }); setConnections((arr) => arr.filter((x) => x.id !== c.id)) }}
+                      className="rounded-md border border-neutral-800 px-2 py-1 text-xs hover:bg-neutral-800/60"
+                    >
+                      Disconnect
+                    </button>
+                  </li>
+                ))}
+                {connections.length === 0 && (
+                  <li className="rounded-lg border border-neutral-800/70 bg-neutral-950/60 p-3 text-neutral-400">No accounts connected.</li>
+                )}
+              </ul>
+              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {providers.includes('google') && (
+                  <a href="/api/social/google/auth" className="block rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-center text-sm hover:bg-neutral-800">Connect YouTube</a>
+                )}
+                {providers.includes('linkedin') && (
+                  <a href="/api/social/linkedin/auth" className="block rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-center text-sm hover:bg-neutral-800">Connect LinkedIn</a>
+                )}
+                {!providers.length && (
+                  <div className="text-xs text-neutral-500">No providers configured. Ask an admin to set OAuth keys.</div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </Panel>
 
       <Panel title="Workspace preferences" icon={Cog}>
