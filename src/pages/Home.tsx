@@ -1,5 +1,5 @@
 // src/pages/Home.tsx
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { Instagram, Twitter, Youtube, Globe } from 'lucide-react'
 import { SignedIn, SignedOut } from '@clerk/clerk-react'
 
@@ -17,6 +17,10 @@ function LandingPage() {
 
   return (
     <>
+      {/* If already signed in, skip landing page */}
+      <SignedIn>
+        <Navigate to="/dashboard" replace />
+      </SignedIn>
       {/* HERO */}
       <section className="relative min-h-[60dvh] flex flex-col items-center justify-start text-center pt-32">
         {/* Subtle animated glow behind the headline */}
