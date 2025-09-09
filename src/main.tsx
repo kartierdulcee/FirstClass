@@ -21,8 +21,21 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       publishableKey={pk}
       signInFallbackRedirectUrl="/dashboard"
       signUpFallbackRedirectUrl="/dashboard"
-      routerPush={(to) => router.navigate(to)}
-      routerReplace={(to) => router.navigate(to, { replace: true })}
+      routerPush={(to) => {
+        // Clerk may pass absolute URLs; fall back to hard navigation
+        if (/^https?:\/\//.test(to)) {
+          window.location.assign(to)
+          return Promise.resolve()
+        }
+        return router.navigate(to)
+      }}
+      routerReplace={(to) => {
+        if (/^https?:\/\//.test(to)) {
+          window.location.replace(to)
+          return Promise.resolve()
+        }
+        return router.navigate(to, { replace: true })
+      }}
     >
       <ToastProvider>
         <RouterProvider router={router} />
