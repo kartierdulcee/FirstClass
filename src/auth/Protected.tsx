@@ -9,12 +9,8 @@ import { Outlet, useLocation } from 'react-router-dom'
 
 export default function Protected() {
   const loc = useLocation()
-  // Use absolute URL when available so Clerk can safely round-trip
-  // across its domain and back to the exact in-app location.
-  const redirectUrl =
-    typeof window !== 'undefined'
-      ? window.location.href
-      : `${loc.pathname}${loc.search}${loc.hash}`
+  // Use a relative path to avoid cross-origin whitelist issues
+  const redirectUrl = `${loc.pathname}${loc.search}${loc.hash}`
 
   return (
     <>
