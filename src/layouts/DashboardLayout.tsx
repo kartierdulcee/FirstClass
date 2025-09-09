@@ -25,11 +25,34 @@ export default function DashboardLayout() {
   ]
 
   const [mobileOpen, setMobileOpen] = React.useState(false)
+  const sidebarRef = React.useRef<HTMLDivElement | null>(null)
 
   // Close the mobile drawer when navigating
   React.useEffect(() => {
     setMobileOpen(false)
   }, [location.pathname])
+
+  // Close on Escape and lock body scroll when open on mobile
+  React.useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setMobileOpen(false)
+    }
+    if (mobileOpen) {
+      document.addEventListener('keydown', onKey)
+      const prev = document.body.style.overflow
+      document.body.style.overflow = 'hidden'
+      // focus first focusable element in the sidebar
+      const el = sidebarRef.current as HTMLElement | null
+      const first = el?.querySelector<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+      first?.focus()
+      return () => {
+        document.removeEventListener('keydown', onKey)
+        document.body.style.overflow = prev
+      }
+    }
+  }, [mobileOpen])
 
   return (
     <div className="flex h-screen bg-[#0b0b0c] text-white">
@@ -45,6 +68,7 @@ export default function DashboardLayout() {
 
       {/* Sidebar */}
       <aside
+        id="dashboard-sidebar"
         className={[
           'border-r border-neutral-800 bg-gradient-to-b from-neutral-950 to-neutral-900/95',
           // Desktop: static column
@@ -54,11 +78,26 @@ export default function DashboardLayout() {
           mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
         ].join(' ')}
         aria-hidden={!mobileOpen && typeof window !== 'undefined' && window.innerWidth < 768}
+        aria-modal={mobileOpen ? true : undefined}
+        role="dialog"
+        ref={sidebarRef as any}
       >
         {/* Brand */}
         <div className="flex h-14 items-center gap-2 border-b border-neutral-800/80 px-4">
           <div className="h-2 w-2 rounded-full bg-[hsl(var(--brand),_#0374FF)] shadow-[0_0_8px_rgba(3,116,255,.8)]" />
           <div className="text-sm font-semibold tracking-wide">FirstClass AI</div>
+          {/* Close button (mobile) */}
+          <button
+            type="button"
+            className="ml-auto md:hidden inline-flex h-8 w-8 items-center justify-center rounded-md border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
+            onClick={() => setMobileOpen(false)}
+            aria-label="Close menu"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
 
         {/* Nav */}
