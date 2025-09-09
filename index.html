@@ -8,6 +8,19 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="mask-icon" href="/firstclass-logo.svg" color="#0ea5e9" />
     <meta name="theme-color" content="#000000" />
+    <link rel="canonical" href="https://www.firstclassfranchise.com/" />
+    <script>
+      // Enforce canonical host in production to avoid cross-origin auth issues
+      (function () {
+        try {
+          var h = location.hostname
+          if (h === 'firstclassfranchise.com') {
+            var dest = 'https://www.firstclassfranchise.com' + location.pathname + location.search + location.hash
+            location.replace(dest)
+          }
+        } catch (_) {}
+      })()
+    </script>
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
