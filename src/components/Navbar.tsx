@@ -94,7 +94,7 @@ export default function Navbar() {
                   userButtonPopoverCard: 'bg-neutral-900 border border-neutral-800',
                 },
               }}
-              afterSignOutUrl="/"
+              afterSignOutUrl="/login"
             />
             {getRole(user) === 'founder' && (
               <span className="ml-1 inline-flex items-center gap-1 rounded-md border border-amber-700/50 bg-amber-900/30 px-2 py-1 text-[10px] uppercase tracking-wider text-amber-200">

@@ -33,7 +33,7 @@ export default function SettingsPage() {
             Manage profile
           </button>
           <button
-            onClick={() => signOut({ redirectUrl: '/' })}
+            onClick={() => signOut({ redirectUrl: '/login' })}
             className="rounded-lg border border-red-700/50 bg-red-900/30 px-3 py-2 text-sm text-red-300 hover:bg-red-800/50"
           >
             Sign out
