@@ -149,24 +149,4 @@ function Panel({
   )
 }
 
-function StatusBadge({ status }: { status: 'connected' | 'needs_reauth' | 'disconnected' }) {
-  if (status === 'connected') {
-    return (
-      <span className="rounded-md border border-emerald-700/50 bg-emerald-900/30 px-2 py-1 text-xs text-emerald-300">
-        Connected
-      </span>
-    )
-  }
-  if (status === 'needs_reauth') {
-    return (
-      <span className="rounded-md border border-amber-700/50 bg-amber-900/30 px-2 py-1 text-xs text-amber-300">
-        Re-auth needed
-      </span>
-    )
-  }
-  return (
-    <span className="rounded-md border border-neutral-700/70 bg-neutral-900 px-2 py-1 text-xs text-neutral-400">
-      Disconnected
-    </span>
-  )
-}
+// Note: previously had an unused StatusBadge component here; removed to satisfy strict TS build.
