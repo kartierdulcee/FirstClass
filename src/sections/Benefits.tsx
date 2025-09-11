@@ -4,18 +4,18 @@ export default function Benefits() {
   const items = [
     {
       icon: <TrendingDown size={18} />,
-      title: 'Cost reduction',
-      desc: 'Optimize business processes and streamline operations to significantly minimize costs and maximize overall efficiency.',
+      title: 'Zero content ops overhead',
+      desc: 'Send us raw footage, notes, or ideas — we plan, script, edit, design, publish, and follow-up so your team doesn’t have to.',
     },
     {
       icon: <Check size={18} />,
-      title: 'Improved outcomes',
-      desc: 'Leverage powerful data-driven insights and innovative strategies to enhance business performance and achieve superior outcomes.',
+      title: 'Consistent, on-brand output',
+      desc: 'Daily, multi-platform publishing with approvals and QA. Your voice, your strategy — reliably executed without the busywork.',
     },
     {
       icon: <TrendingUp size={18} />,
-      title: 'Increased productivity',
-      desc: 'Enhance team output by automating redundant tasks, refining processes, and speeding up business functions.',
+      title: 'Time back to grow',
+      desc: 'Refocus on product and sales while we own the content engine and report on what’s working each week.',
     },
   ]
 
@@ -33,10 +33,10 @@ export default function Benefits() {
           className="mt-4 text-3xl md:text-5xl font-bold tracking-tight"
           data-reveal
         >
-          Maximize efficiency and impact
+          We run content. You grow.
         </h2>
         <p className="mt-2 text-neutral-300" data-reveal>
-          Discover the key benefits of partnering with FirstClass.
+          Done-for-you content operations for creators, brands, and agencies.
         </p>
 
         <div className="mt-10 grid gap-4 md:grid-cols-3" data-reveal>

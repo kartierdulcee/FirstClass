@@ -11,42 +11,42 @@ type Tier = {
 
 const tiers: Tier[] = [
   {
-    name: 'Starter',
+    name: 'Self-Serve',
     price: '$29/mo',
-    blurb: 'For solo creators testing AI automation.',
+    blurb: 'DIY with our tools. Great if you want to keep production in-house.',
     features: [
       '1 brand/workspace',
-      'Auto-repurpose to 3 platforms',
-      'Basic DM follow-ups (50/mo)',
+      'Repurpose to 3 platforms',
+      'Basic templates & queues',
       'Email support',
     ],
-    cta: 'Start free',
+    cta: 'Start self-serve',
   },
   {
-    name: 'Pro',
-    price: '$99/mo',
-    blurb: 'For growing creators & small teams.',
+    name: 'Managed',
+    price: 'From $2,000/mo',
+    blurb: 'Done-for-you content operations. You send raw content — we handle everything else.',
     features: [
-      '3 brands/workspaces',
-      'Cross-post to 6 platforms',
-      'Advanced sequences & A/B tests',
-      'DM + Email follow-ups (2k/mo)',
-      'Priority support',
+      'Strategy, scripting, editing, design',
+      'Publishing across 6+ platforms',
+      'DM/email follow-ups & comment triage',
+      'Weekly reports & A/B testing',
+      'Priority Slack support',
     ],
-    cta: 'Upgrade to Pro',
+    cta: 'Get managed',
     highlight: true,
   },
   {
     name: 'Enterprise',
     price: 'Custom',
-    blurb: 'For agencies & franchises at scale.',
+    blurb: 'For agencies & franchises at scale — custom workflows, security, and support.',
     features: [
       'Unlimited workspaces',
       'SLA, SSO, audit logs',
       'Custom workflows & webhooks',
       'Dedicated success manager',
     ],
-    cta: 'Talk to sales',
+    cta: 'Book a call',
   },
 ]
 

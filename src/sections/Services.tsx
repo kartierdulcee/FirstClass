@@ -9,21 +9,21 @@ export default function Services() {
             className="inline-flex items-center gap-2 rounded-full border border-neutral-800/70 bg-neutral-900/40 px-3 py-1 text-xs text-neutral-300"
             data-reveal
           >
-            Services
+            Done-for-you services
           </div>
           <h2 className="mt-4 text-3xl md:text-5xl font-bold tracking-tight" data-reveal>
-            Innovative services for growth
+            Done-for-You Content Operations
           </h2>
           <p className="mt-2 text-neutral-300" data-reveal>
-            Tailored solutions to streamline, innovate, and grow.
+            Send raw footage, voice notes, or bullet points. We plan, script, edit, design, publish, and follow-up across channels.
           </p>
         </div>
 
         {/* Grid */}
         <div className="grid gap-4 md:grid-cols-3" data-reveal>
           <ServiceCard
-            title="Business Chatbot"
-            desc="Enhance customer interactions by automating responses with intelligent chatbots, providing seamless service."
+            title="Strategy & Planning"
+            desc="Monthly content plans, hooks, briefs, and shot lists aligned to your goals and brand voice."
           >
             <MockPanel>
               <Bar w="70%" />
@@ -39,8 +39,8 @@ export default function Services() {
           </ServiceCard>
 
           <ServiceCard
-            title="Content Creation"
-            desc="Effortlessly generate high-quality, engaging content tailored to your audience using AI-powered tools."
+            title="Editing & Repurposing"
+            desc="Turn long-form into shorts, carousels, threads, blogs, and emails — with tight captions and CTAs."
           >
             <MockPanel>
               <div className="rounded-xl bg-neutral-800/80 h-10 px-3 flex items-center text-neutral-400 text-xs">
@@ -60,8 +60,8 @@ export default function Services() {
           </ServiceCard>
 
           <ServiceCard
-            title="Lead Generation"
-            desc="Strengthen your sales pipeline by identifying, targeting, and attracting high-quality prospects with precision."
+            title="Publishing & Follow-ups"
+            desc="Schedule across platforms, handle DM/email follow-ups, and triage comments to drive conversations."
           >
             <MockPanel>
               <Profile name="Jack Daniel" role="Founder" />
@@ -79,8 +79,8 @@ export default function Services() {
           </ServiceCard>
 
           <ServiceCard
-            title="Data Insights"
-            desc="Extract actionable insights from complex data sets to drive informed decisions and accelerate growth."
+            title="Analytics & Iteration"
+            desc="Weekly reporting, A/B tests, and continuous improvements based on what resonates with your audience."
           >
             <MockPanel>
               <Pills labels={['Work Efficiency', 'Cost Reduction', 'Automated Tasks', 'Lead Nurturing']} />
@@ -93,8 +93,8 @@ export default function Services() {
           </ServiceCard>
 
           <ServiceCard
-            title="AI Consulting"
-            desc="Work with experts to develop personalized AI strategies that streamline operations and deliver results."
+            title="Design & Thumbnails"
+            desc="On-brand creatives, thumbnails, and graphics that lift click-through and retention."
           >
             <MockPanel>
               <PillRow labels={['On Call…', 'Mic On', 'Video Off', 'Caption On', 'Present']} />
@@ -108,8 +108,8 @@ export default function Services() {
           </ServiceCard>
 
           <ServiceCard
-            title="Campaign Orchestration"
-            desc="Plan, schedule, and publish across channels with reusable templates and approval flows."
+            title="Creator Ops & Calendar"
+            desc="Recording guides, approvals, and a predictable calendar so content happens without chaos."
           >
             <MockPanel>
               <div className="grid grid-cols-3 gap-2">

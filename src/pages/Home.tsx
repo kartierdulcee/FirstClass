@@ -35,7 +35,7 @@ function LandingPage() {
             data-reveal
           >
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-[hsl(var(--brand))]" />
-            What’s new
+            Done-for-you content ops
           </div>
 
           {/* Headline */}
@@ -43,15 +43,15 @@ function LandingPage() {
             className="text-4xl md:text-6xl font-extrabold leading-[1.05] tracking-tight"
             data-reveal
           >
-            <span className="font-serif italic text-neutral-300">First Class</span>
-            <span className="mx-2">:</span>
-            AI Content Automation for Relentless Performers
+            <span className="font-serif italic text-neutral-300">Send us your raw content.</span>
+            <span className="mx-2">We handle the rest.</span>
           </h1>
 
           {/* Subcopy */}
           <p className="mt-4 text-neutral-300" data-reveal>
-            Private automations for creators & brands who want more — more output, more control,
-            more revenue. Repurpose, post, and follow-up across every channel on autopilot.
+            We run your entire content process end to end — planning, scripting, editing, design,
+            publishing, and follow-ups across every channel. You focus on your business; we deliver
+            consistent, on-brand content that compounds.
           </p>
 
           {/* Primary CTA */}
@@ -61,7 +61,7 @@ function LandingPage() {
                 to="/dashboard"
                 className="rounded-2xl px-5 py-2.5 bg-gradient-to-r from-[#0374FF] to-[#0a5ce0] text-white font-semibold border border-neutral-800 shadow-[0_0_25px_rgba(3,116,255,.3)]"
               >
-                Open Dashboard
+                Go to Dashboard
               </Link>
             </SignedIn>
 
@@ -70,7 +70,7 @@ function LandingPage() {
                 to="/signup"
                 className="rounded-2xl px-5 py-2.5 bg-gradient-to-r from-[#0374FF] to-[#0a5ce0] text-white font-semibold border border-neutral-800 shadow-[0_0_25px_rgba(3,116,255,.3)]"
               >
-                Get Started
+                Get Content Done For You
               </Link>
             </SignedOut>
           </div>

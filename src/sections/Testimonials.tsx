@@ -56,10 +56,10 @@ export default function Testimonials() {
             Testimonials
           </div>
           <h2 className="mt-4 text-3xl md:text-5xl font-bold tracking-tight" data-reveal>
-            Trusted by satisfied clients
+            Trusted by teams who outsourced content ops
           </h2>
           <p className="mt-2 text-neutral-300" data-reveal>
-            Discover how FirstClass drives growth and consistency for creators & brands.
+            See how done-for-you content unlocked consistency, engagement, and growth.
           </p>
         </div>
 
