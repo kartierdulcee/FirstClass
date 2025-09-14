@@ -28,12 +28,24 @@ model Client {
   name        String
   ownerEmail  String
   status      ClientStatus    @default(ACTIVE)
-  driveFolderId String?
-  driveFolderUrl String?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
   managers    ClientManager[]
   requests    Request[]
+  onboardings Onboarding[]
+}
+
+model Onboarding {
+  id        String   @id @default(cuid())
+  clientId  String
+  requestId String   @unique
+  data      Json
+  createdAt DateTime @default(now())
+
+  client   Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  request  Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, createdAt])
 }
 
 model ClientManager {
@@ -58,6 +70,7 @@ model Request {
   clientId       String?
   client         Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
   notes          RequestNote[]
+  onboarding     Onboarding?
 }
 
 model RequestNote {

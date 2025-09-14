@@ -5,7 +5,7 @@ export default function Benefits() {
     {
       icon: <TrendingDown size={18} />,
       title: 'Zero content ops overhead',
-      desc: 'Send us raw footage, notes, or ideas — we plan, script, edit, design, publish, and follow-up so your team doesn’t have to.',
+      desc: 'Send us raw footage, notes, or ideas — we plan, script, captions, edit, design, publish, and follow-up so your team doesn’t have to.',
     },
     {
       icon: <Check size={18} />,
@@ -33,7 +33,7 @@ export default function Benefits() {
           className="mt-4 text-3xl md:text-5xl font-bold tracking-tight"
           data-reveal
         >
-          We run content. You grow.
+          We execute. You work on other things.
         </h2>
         <p className="mt-2 text-neutral-300" data-reveal>
           Done-for-you content operations for creators, brands, and agencies.

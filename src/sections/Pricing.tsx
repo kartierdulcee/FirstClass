@@ -27,7 +27,7 @@ const tiers: Tier[] = [
     price: 'From $2,000/mo',
     blurb: 'Done-for-you content operations. You send raw content — we handle everything else.',
     features: [
-      'Strategy, scripting, editing, design',
+      'Strategy, captions, editing, design',
       'Publishing across 6+ platforms',
       'DM/email follow-ups & comment triage',
       'Weekly reports & A/B testing',

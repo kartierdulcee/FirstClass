@@ -77,9 +77,11 @@ app.post('/api/onboarding/submit', async (req: Request, res: Response) => {
     // Find or create a Client, then create linked Request
     const existingByOwner = await prisma.client.findFirst({ where: { ownerEmail: d.email } })
     const existingByName = existingByOwner ? null : await prisma.client.findFirst({ where: { name: d.brand } })
-    const client = existingByOwner || existingByName || await prisma.client.create({
+    let client = existingByOwner || existingByName || await prisma.client.create({
       data: { name: d.brand, ownerEmail: d.email, status: 'ACTIVE' as any },
     })
+
+    // Drive folder creation removed per latest requirements.
 
     const subject = `Onboarding: ${d.brand}`
     const created = await prisma.request.create({
@@ -107,6 +109,13 @@ app.post('/api/onboarding/submit', async (req: Request, res: Response) => {
       d.notes ? `Notes: ${d.notes}` : null,
     ].filter(Boolean).join('\n')
     await prisma.requestNote.create({ data: { requestId: created.id, author: d.email, text: summary } })
+
+    // Persist structured onboarding payload linked to client and request
+    try {
+      await prisma.onboarding.create({ data: { clientId: client.id, requestId: created.id, data: d as any } as any })
+    } catch (e) {
+      console.error('onboarding_persist_error', e)
+    }
 
     // Optional: push to Airtable if configured
     const AIRTABLE_BASE = process.env.AIRTABLE_BASE_ID
@@ -319,6 +328,95 @@ app.put('/api/admin/settings', requireAdminish, async (req, res) => {
     create: { id: 1, ...data },
   })
   res.json(s)
+})
+
+// ----- Client Onboarding Update (Admin) -----
+app.put('/api/admin/clients/:id/onboarding', requireAdminish, async (req, res) => {
+  const { id } = req.params
+  const sync = String(req.query.sync || '0') === '1'
+  const schema = z.object({
+    name: z.string().min(1),
+    email: z.string().email(),
+    brand: z.string().min(1),
+    website: z.string().optional().nullable(),
+    instagram: z.string().optional().nullable(),
+    twitter: z.string().optional().nullable(),
+    youtube: z.string().optional().nullable(),
+    goals: z.string().min(1),
+    pillars: z.string().optional().nullable(),
+    channels: z.array(z.string()).optional().default([]),
+    cadence: z.string().min(1),
+    approvalFlow: z.string().optional().nullable(),
+    assetsUrl: z.string().optional().nullable(),
+    notes: z.string().optional().nullable(),
+  })
+  const parsed = schema.safeParse(req.body)
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() })
+  const d = parsed.data
+
+  try {
+    const client = await prisma.client.findUnique({ where: { id } })
+    if (!client) return res.status(404).json({ error: 'Client not found' })
+
+    const created = await prisma.onboarding.create({ data: { clientId: id, requestId: (await ensureOnboardingRequest(id, d)).id, data: d as any } as any })
+
+    if (sync) {
+      const AIRTABLE_BASE = process.env.AIRTABLE_BASE_ID
+      const AIRTABLE_TABLE = process.env.AIRTABLE_TABLE || 'Onboarding'
+      const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN
+      if (AIRTABLE_BASE && AIRTABLE_TOKEN) {
+        try {
+          const fields: Record<string, any> = {
+            Name: d.name,
+            Email: d.email,
+            Brand: d.brand,
+            Website: d.website || '',
+            Instagram: d.instagram || '',
+            Twitter: d.twitter || '',
+            YouTube: d.youtube || '',
+            Goals: d.goals,
+            Pillars: d.pillars || '',
+            Channels: (d.channels || []).join(', '),
+            Cadence: d.cadence,
+            Approval: d.approvalFlow || '',
+            AssetsURL: d.assetsUrl || '',
+            Notes: d.notes || '',
+            ClientId: id,
+            RequestId: created.requestId,
+            SyncedAt: new Date().toISOString(),
+          }
+          await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE}/${encodeURIComponent(AIRTABLE_TABLE)}`,
+            {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ records: [{ fields }] }),
+            })
+        } catch (err) {
+          console.error('airtable_sync_error', err)
+        }
+      }
+    }
+
+    res.json({ ok: true, onboardingId: created.id })
+  } catch (err: any) {
+    console.error('onboarding_update_error', err)
+    res.status(500).json({ error: err?.message || 'Server error' })
+  }
+})
+
+async function ensureOnboardingRequest(clientId: string, d: { brand: string; email: string }) {
+  // Try to find the latest ONBOARDING request for this client; else create one
+  const existing = await prisma.request.findFirst({ where: { clientId, type: 'ONBOARDING' as any }, orderBy: { createdAt: 'desc' } })
+  if (existing) return existing
+  return prisma.request.create({ data: { type: 'ONBOARDING' as any, subject: `Onboarding: ${d.brand}`, requesterEmail: d.email, clientId } })
+}
+
+// ----- Client Onboarding (latest) -----
+app.get('/api/admin/clients/:id/onboarding', requireAdminish, async (req, res) => {
+  const { id } = req.params
+  const row = await prisma.onboarding.findFirst({ where: { clientId: id }, orderBy: { createdAt: 'desc' } })
+  if (!row) return res.json(null)
+  res.json({ createdAt: row.createdAt, data: row.data })
 })
 
 // ----- Clients -----
