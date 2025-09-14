@@ -74,13 +74,20 @@ app.post('/api/onboarding/submit', async (req: Request, res: Response) => {
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() })
     const d = parsed.data
 
-    // Create Request in admin dashboard
+    // Find or create a Client, then create linked Request
+    const existingByOwner = await prisma.client.findFirst({ where: { ownerEmail: d.email } })
+    const existingByName = existingByOwner ? null : await prisma.client.findFirst({ where: { name: d.brand } })
+    const client = existingByOwner || existingByName || await prisma.client.create({
+      data: { name: d.brand, ownerEmail: d.email, status: 'ACTIVE' as any },
+    })
+
     const subject = `Onboarding: ${d.brand}`
     const created = await prisma.request.create({
       data: {
         type: 'ONBOARDING' as any,
         subject,
         requesterEmail: d.email,
+        clientId: client.id,
       },
     })
     // Store detail note with a compact summary
@@ -123,6 +130,7 @@ app.post('/api/onboarding/submit', async (req: Request, res: Response) => {
           AssetsURL: d.assetsUrl || '',
           Notes: d.notes || '',
           RequestId: created.id,
+          ClientId: client.id,
           CreatedAt: new Date().toISOString(),
         }
         await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE}/${encodeURIComponent(AIRTABLE_TABLE)}`,
