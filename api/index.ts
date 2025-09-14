@@ -49,6 +49,101 @@ app.post('/api/assistant', async (req: Request, res: Response) => {
   }
 })
 
+// ---------- Public Onboarding Submit ----------
+// Accepts onboarding submissions from the in-app form and stores them as a Request of type ONBOARDING.
+// Optionally syncs a record to Airtable if env is configured.
+app.post('/api/onboarding/submit', async (req: Request, res: Response) => {
+  try {
+    const schema = z.object({
+      name: z.string().min(1),
+      email: z.string().email(),
+      brand: z.string().min(1),
+      website: z.string().optional().nullable(),
+      instagram: z.string().optional().nullable(),
+      twitter: z.string().optional().nullable(),
+      youtube: z.string().optional().nullable(),
+      goals: z.string().min(1),
+      pillars: z.string().optional().nullable(),
+      channels: z.array(z.string()).optional().default([]),
+      cadence: z.string().min(1),
+      approvalFlow: z.string().optional().nullable(),
+      assetsUrl: z.string().optional().nullable(),
+      notes: z.string().optional().nullable(),
+    })
+    const parsed = schema.safeParse(req.body)
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() })
+    const d = parsed.data
+
+    // Create Request in admin dashboard
+    const subject = `Onboarding: ${d.brand}`
+    const created = await prisma.request.create({
+      data: {
+        type: 'ONBOARDING' as any,
+        subject,
+        requesterEmail: d.email,
+      },
+    })
+    // Store detail note with a compact summary
+    const summary = [
+      `Name: ${d.name}`,
+      `Brand: ${d.brand}`,
+      d.website ? `Website: ${d.website}` : null,
+      `Goals: ${d.goals}`,
+      d.pillars ? `Pillars/Voice: ${d.pillars}` : null,
+      `Channels: ${(d.channels || []).join(', ') || 'n/a'}`,
+      `Cadence: ${d.cadence}`,
+      d.approvalFlow ? `Approval: ${d.approvalFlow}` : null,
+      d.assetsUrl ? `Assets: ${d.assetsUrl}` : null,
+      d.instagram ? `Instagram: ${d.instagram}` : null,
+      d.twitter ? `Twitter: ${d.twitter}` : null,
+      d.youtube ? `YouTube: ${d.youtube}` : null,
+      d.notes ? `Notes: ${d.notes}` : null,
+    ].filter(Boolean).join('\n')
+    await prisma.requestNote.create({ data: { requestId: created.id, author: d.email, text: summary } })
+
+    // Optional: push to Airtable if configured
+    const AIRTABLE_BASE = process.env.AIRTABLE_BASE_ID
+    const AIRTABLE_TABLE = process.env.AIRTABLE_TABLE || 'Onboarding'
+    const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN
+    if (AIRTABLE_BASE && AIRTABLE_TOKEN) {
+      try {
+        const fields: Record<string, any> = {
+          Name: d.name,
+          Email: d.email,
+          Brand: d.brand,
+          Website: d.website || '',
+          Instagram: d.instagram || '',
+          Twitter: d.twitter || '',
+          YouTube: d.youtube || '',
+          Goals: d.goals,
+          Pillars: d.pillars || '',
+          Channels: (d.channels || []).join(', '),
+          Cadence: d.cadence,
+          Approval: d.approvalFlow || '',
+          AssetsURL: d.assetsUrl || '',
+          Notes: d.notes || '',
+          RequestId: created.id,
+          CreatedAt: new Date().toISOString(),
+        }
+        await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE}/${encodeURIComponent(AIRTABLE_TABLE)}`,
+          {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ records: [{ fields }] }),
+          })
+      } catch (err) {
+        console.error('airtable_sync_error', err)
+        await prisma.requestNote.create({ data: { requestId: created.id, author: 'system', text: 'Airtable sync failed. Check credentials.' } })
+      }
+    }
+
+    res.json({ ok: true, id: created.id })
+  } catch (err: any) {
+    console.error('onboarding_submit_error', err)
+    res.status(500).json({ error: err?.message || 'Server error' })
+  }
+})
+
 // ---------- OAuth Social Connections (user) ----------
 import crypto from 'node:crypto'
 
