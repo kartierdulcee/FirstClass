@@ -49,7 +49,7 @@ function LandingPage() {
 
           {/* Subcopy */}
           <p className="mt-4 text-neutral-300" data-reveal>
-            We run your entire content process end to end — planning, scripting, editing, design,
+            We run your entire content process end to end — planning, captions, editing, design,
             publishing, and follow-ups across every channel. You focus on your business; we deliver
             consistent, on-brand content that compounds.
           </p>
@@ -67,7 +67,7 @@ function LandingPage() {
 
             <SignedOut>
               <Link
-                to="/signup"
+                to="/onboarding"
                 className="rounded-2xl px-5 py-2.5 bg-gradient-to-r from-[#0374FF] to-[#0a5ce0] text-white font-semibold border border-neutral-800 shadow-[0_0_25px_rgba(3,116,255,.3)]"
               >
                 Get Content Done For You

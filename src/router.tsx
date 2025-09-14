@@ -8,6 +8,7 @@ import Protected from './auth/Protected'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
+import Onboarding from './pages/Onboarding'
 
 import DashboardHome from './pages/dashboard/Home'
 import Content from './pages/dashboard/Content'
@@ -32,6 +33,7 @@ export const router = createBrowserRouter([
       { path: 'sign-in', element: <Login /> },
       { path: 'signup', element: <Signup /> },
       { path: 'sign-up', element: <Signup /> },
+      { path: 'onboarding', element: <Onboarding /> },
     ],
   },
   {
