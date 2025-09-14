@@ -1,4 +1,6 @@
 
+import React from 'react'
+
 export default function Onboarding() {
   const externalFormUrl = import.meta.env.VITE_ONBOARDING_FORM_URL as string | undefined
 
