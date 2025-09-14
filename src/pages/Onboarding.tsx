@@ -1,4 +1,3 @@
-import React from 'react'
 
 export default function Onboarding() {
   const formUrl = import.meta.env.VITE_ONBOARDING_FORM_URL as string | undefined
@@ -51,4 +50,3 @@ export default function Onboarding() {
     </div>
   )
 }
-
