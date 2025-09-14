@@ -28,6 +28,8 @@ model Client {
   name        String
   ownerEmail  String
   status      ClientStatus    @default(ACTIVE)
+  driveFolderId String?
+  driveFolderUrl String?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
   managers    ClientManager[]
