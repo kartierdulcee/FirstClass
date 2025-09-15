@@ -1,11 +1,11 @@
-import { useAuth as useClerkAuth } from '@clerk/clerk-react'
+import { useAuth } from '../auth/firebaseAuth'
 import { useCallback } from 'react'
 
 /**
  * Small fetch wrapper that adds base URL and Clerk auth header.
  */
 export function useApi() {
-  const { getToken } = useClerkAuth()
+  const { getToken } = useAuth()
   const base = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '/api'
 
   const api = useCallback(async function api<T>(path: string, init: RequestInit = {}): Promise<T> {

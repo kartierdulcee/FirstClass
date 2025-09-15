@@ -1,4 +1,4 @@
-import { SignedIn, SignedOut, RedirectToSignIn } from '@clerk/clerk-react'
+import { SignedIn, SignedOut, RedirectToSignIn } from '../auth/firebaseAuth'
 import { Outlet, useLocation } from 'react-router-dom'
 
 export default function Protected() {

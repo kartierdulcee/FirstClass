@@ -1,45 +1,17 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { ClerkProvider } from '@clerk/clerk-react'
+import { AuthProvider } from './auth/firebaseAuth'
 import { RouterProvider } from 'react-router-dom'
 import { router } from './router'
 import { ToastProvider } from './components/toast'
 import './index.css'
 
-// 👇 Load Clerk publishable key from .env.local
-const pk = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string
-
-if (!pk) {
-  throw new Error(
-    'Missing VITE_CLERK_PUBLISHABLE_KEY. Set it in a .env.local at the project root.'
-  )
-}
-
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ClerkProvider
-      publishableKey={pk}
-      signInFallbackRedirectUrl="/dashboard"
-      signUpFallbackRedirectUrl="/dashboard"
-      routerPush={(to) => {
-        // Clerk may pass absolute URLs; fall back to hard navigation
-        if (/^https?:\/\//.test(to)) {
-          window.location.assign(to)
-          return Promise.resolve()
-        }
-        return router.navigate(to)
-      }}
-      routerReplace={(to) => {
-        if (/^https?:\/\//.test(to)) {
-          window.location.replace(to)
-          return Promise.resolve()
-        }
-        return router.navigate(to, { replace: true })
-      }}
-    >
+    <AuthProvider>
       <ToastProvider>
         <RouterProvider router={router} />
       </ToastProvider>
-    </ClerkProvider>
+    </AuthProvider>
   </React.StrictMode>
 )

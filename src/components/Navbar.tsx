@@ -1,4 +1,6 @@
-import { SignedIn, SignedOut, UserButton, useUser } from '@clerk/clerk-react'
+import { SignedIn, SignedOut, useUser, useClerk } from '../auth/firebaseAuth'
+import { useState } from 'react'
+import ProfileModal from './ProfileModal'
 import { Link } from 'react-router-dom'
 import { getRole } from '../auth/roles'
 
@@ -12,6 +14,8 @@ function scrollToId(id: string) {
 
 export default function Navbar() {
   const { user } = useUser()
+  const { signOut } = useClerk()
+  const [profileOpen, setProfileOpen] = useState(false)
 
   return (
     // Wrapper makes bar float & non-blocking outside pill
@@ -88,14 +92,18 @@ export default function Navbar() {
           </SignedOut>
 
           <SignedIn>
-            <UserButton
-              appearance={{
-                elements: {
-                  userButtonPopoverCard: 'bg-neutral-900 border border-neutral-800',
-                },
-              }}
-              afterSignOutUrl="/login"
-            />
+            <button
+              onClick={() => setProfileOpen(true)}
+              className="rounded-2xl px-3 py-1.5 bg-neutral-800 text-white text-sm border border-neutral-700 hover:bg-neutral-700"
+            >
+              Manage Profile
+            </button>
+            <button
+              onClick={() => signOut(() => (window.location.href = '/login'))}
+              className="rounded-2xl px-3 py-1.5 bg-neutral-800 text-white text-sm border border-neutral-700 hover:bg-neutral-700"
+            >
+              Sign Out
+            </button>
             {getRole(user) === 'founder' && (
               <span className="ml-1 inline-flex items-center gap-1 rounded-md border border-amber-700/50 bg-amber-900/30 px-2 py-1 text-[10px] uppercase tracking-wider text-amber-200">
                 Founder
@@ -103,6 +111,8 @@ export default function Navbar() {
             )}
           </SignedIn>
         </div>
+        {/* Profile modal mount */}
+        <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
       </div>
     </div>
   )

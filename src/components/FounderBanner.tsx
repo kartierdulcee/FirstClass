@@ -1,4 +1,4 @@
-import { useUser } from '@clerk/clerk-react'
+import { useUser } from '../auth/firebaseAuth'
 import { Link } from 'react-router-dom'
 import { getRole } from '../auth/roles'
 

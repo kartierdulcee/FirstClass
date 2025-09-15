@@ -1,15 +1,17 @@
-import { useUser, useClerk } from '@clerk/clerk-react'
+import { useUser, useClerk } from '../../auth/firebaseAuth'
+import ProfileModal from '../../components/ProfileModal'
 import { useEffect, useState } from 'react'
 import { useApi } from '../../api/client'
 import { Mail, User, Globe, Settings as Cog, Link as LinkIcon, Trash2 } from 'lucide-react'
 
 export default function SettingsPage() {
   const { user } = useUser()
-  const { openUserProfile, signOut } = useClerk()
+  const { signOut } = useClerk()
   const api = useApi()
   const [connections, setConnections] = useState<{ id: string; provider: string; handle?: string; createdAt: string }[]>([])
   const [providers, setProviders] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
+  const [profileOpen, setProfileOpen] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -40,7 +42,7 @@ export default function SettingsPage() {
         <div className="space-y-3 text-sm text-neutral-300">
           <div className="flex items-center gap-2">
             <Mail size={14} className="text-neutral-500" />
-            <span>{user?.primaryEmailAddress?.emailAddress ?? '—'}</span>
+            <span>{(user as any)?.primaryEmailAddress?.emailAddress ?? (user as any)?.email ?? '—'}</span>
           </div>
           <div className="flex items-center gap-2">
             <Globe size={14} className="text-neutral-500" />
@@ -49,13 +51,13 @@ export default function SettingsPage() {
         </div>
         <div className="mt-4 flex gap-2">
           <button
-            onClick={() => openUserProfile()}
+            onClick={() => setProfileOpen(true)}
             className="rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm hover:bg-neutral-800"
           >
             Manage profile
           </button>
           <button
-            onClick={() => signOut({ redirectUrl: '/login' })}
+            onClick={() => signOut(() => (window.location.href = '/login'))}
             className="rounded-lg border border-red-700/50 bg-red-900/30 px-3 py-2 text-sm text-red-300 hover:bg-red-800/50"
           >
             Sign out
@@ -125,6 +127,7 @@ export default function SettingsPage() {
           <Trash2 size={14} /> Delete workspace
         </button>
       </Panel>
+      <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
     </div>
   )
 }

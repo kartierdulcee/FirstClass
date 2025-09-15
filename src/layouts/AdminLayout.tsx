@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { useClerk, useUser } from '@clerk/clerk-react'
+import { useClerk, useUser } from '../auth/firebaseAuth'
 import { Users, LayoutDashboard, FileText, Settings } from 'lucide-react'
 import FounderBanner from '../components/FounderBanner'
 import { getRole } from '../auth/roles'
@@ -48,8 +48,8 @@ export default function AdminLayout() {
           ))}
         </nav>
         <div className="border-t border-neutral-800 p-3 text-sm text-neutral-400">
-          <div>{user?.fullName}</div>
-          <div className="truncate">{user?.primaryEmailAddress?.emailAddress}</div>
+          <div>{(user as any)?.fullName ?? (user as any)?.displayName ?? (user as any)?.email}</div>
+          <div className="truncate">{(user as any)?.primaryEmailAddress?.emailAddress ?? (user as any)?.email}</div>
           <button
             onClick={() => signOut(() => nav('/'))}
             className="mt-2 w-full rounded-lg border border-neutral-700 px-3 py-1.5 text-left text-neutral-300 hover:bg-neutral-800 hover:text-white"

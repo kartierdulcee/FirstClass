@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import React from 'react'
-import { useClerk, useUser } from '@clerk/clerk-react'
+import { useClerk, useUser } from '../auth/firebaseAuth'
 import {
   LayoutDashboard,
   FileText,
@@ -131,7 +131,7 @@ export default function DashboardLayout() {
         {/* Footer / Account */}
         <div className="absolute bottom-0 left-0 right-0 border-t border-neutral-800/80 p-3">
           <div className="mb-2 truncate px-2 text-xs text-neutral-400">
-            {user?.fullName ?? user?.username}
+            {(user as any)?.fullName ?? (user as any)?.displayName ?? (user as any)?.email ?? (user as any)?.uid}
           </div>
           <button
             onClick={() => signOut(() => nav('/login'))}

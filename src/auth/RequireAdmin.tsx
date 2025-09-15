@@ -1,4 +1,4 @@
-import { RedirectToSignIn, useUser } from '@clerk/clerk-react'
+import { RedirectToSignIn, useUser } from '../auth/firebaseAuth'
 import type { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { isAdminish } from './roles'

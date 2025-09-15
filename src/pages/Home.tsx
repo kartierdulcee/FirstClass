@@ -1,7 +1,7 @@
 // src/pages/Home.tsx
 import { Link, Navigate } from 'react-router-dom'
 import { Instagram, Twitter, Youtube, Globe } from 'lucide-react'
-import { SignedIn, SignedOut } from '@clerk/clerk-react'
+import { SignedIn, SignedOut } from '../auth/firebaseAuth'
 
 import Benefits from '../sections/Benefits'
 import Services from '../sections/Services'

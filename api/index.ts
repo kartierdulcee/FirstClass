@@ -4,7 +4,7 @@ import OpenAI from 'openai'
 import type { Request, Response, NextFunction } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { z } from 'zod'
-import { clerkMiddleware, getAuth } from '@clerk/express'
+import { requireAuth, getUser } from './firebaseAuth'
 
 const prisma = new PrismaClient()
 const app = express()
@@ -12,11 +12,11 @@ app.use(express.json())
 app.use(cookieParser())
 
 function requireAdminish(req: Request, res: Response, next: NextFunction) {
-  const { userId, sessionClaims } = getAuth(req)
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' })
-  const role = (sessionClaims?.public_metadata as any)?.role
+  const user = getUser(req)
+  if (!user) return res.status(401).json({ error: 'Unauthorized' })
+  const role = (user.claims as any)?.role as string | undefined
   const founderEmail = process.env.FOUNDER_EMAIL?.toLowerCase()
-  const email = (sessionClaims?.email as string | undefined)?.toLowerCase()
+  const email = (user.email || '').toLowerCase()
   const allowed = role === 'admin' || role === 'manager' || (founderEmail && email === founderEmail)
   if (!allowed) return res.status(403).json({ error: 'Forbidden' })
   next()
@@ -190,8 +190,8 @@ const providers: Record<ProviderKey, {
 
 const OAUTH_BASE = process.env.OAUTH_REDIRECT_BASE
 
-// Clerk auth for user endpoints
-app.use('/api/social', clerkMiddleware())
+// Firebase auth for user endpoints
+app.use('/api/social', requireAuth)
 
 app.get('/api/social/providers', (_req, res) => {
   const available = Object.entries(providers).filter(([, p]) => p.clientId && p.clientSecret).map(([k]) => k)
@@ -199,23 +199,23 @@ app.get('/api/social/providers', (_req, res) => {
 })
 
 app.get('/api/social/connections', async (req, res) => {
-  const { userId } = getAuth(req)
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' })
-  const rows = await prisma.socialAccount.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } })
+  const user = getUser(req)
+  if (!user) return res.status(401).json({ error: 'Unauthorized' })
+  const rows = await prisma.socialAccount.findMany({ where: { userId: user.uid }, orderBy: { createdAt: 'desc' } })
   res.json(rows.map(r => ({ id: r.id, provider: r.provider, handle: r.handle, createdAt: r.createdAt })))
 })
 
 // Start OAuth: redirects to provider
 app.get('/api/social/:provider/auth', (req, res) => {
-  const { userId } = getAuth(req)
-  if (!userId) return res.status(401).send('Unauthorized')
+  const user = getUser(req)
+  if (!user) return res.status(401).send('Unauthorized')
   const provider = req.params.provider as ProviderKey
   const cfg = providers[provider]
   if (!cfg || !cfg.clientId || !cfg.clientSecret) return res.status(501).send('Provider not configured')
   if (!OAUTH_BASE) return res.status(501).send('OAUTH_REDIRECT_BASE not set')
   const redirectUri = `${OAUTH_BASE.replace(/\/$/, '')}/api/social/${provider}/callback`
   const state = crypto.randomBytes(16).toString('hex')
-  res.cookie(`oauth_state_${provider}`, `${state}:${userId}`, { httpOnly: true, secure: true, sameSite: 'lax', maxAge: 10 * 60 * 1000, path: '/' })
+  res.cookie(`oauth_state_${provider}`, `${state}:${user.uid}`, { httpOnly: true, secure: true, sameSite: 'lax', maxAge: 10 * 60 * 1000, path: '/' })
   const url = new URL(cfg.authorizeUrl)
   url.searchParams.set('response_type', 'code')
   url.searchParams.set('client_id', cfg.clientId)
@@ -291,8 +291,8 @@ app.get('/api/social/:provider/callback', async (req, res) => {
 })
 
 app.delete('/api/social/:id', async (req, res) => {
-  const { userId } = getAuth(req)
-  if (!userId) return res.status(401).json({ error: 'Unauthorized' })
+  const user = getUser(req)
+  if (!user) return res.status(401).json({ error: 'Unauthorized' })
   const { id } = req.params
   const row = await prisma.socialAccount.findUnique({ where: { id } })
   if (!row || row.userId !== userId) return res.status(404).json({ error: 'Not found' })
@@ -300,8 +300,8 @@ app.delete('/api/social/:id', async (req, res) => {
   res.json({ ok: true })
 })
 
-// Apply Clerk auth to admin endpoints only
-app.use('/api/admin', clerkMiddleware())
+// Apply Firebase auth to admin endpoints only
+app.use('/api/admin', requireAuth)
 
 // ----- Settings -----
 app.get('/api/admin/settings', requireAdminish, async (_req, res) => {
