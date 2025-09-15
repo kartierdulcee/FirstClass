@@ -1,13 +1,17 @@
 import { auth } from './admin/FB'
 import { useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth'
 
 export default function Login() {
   const [error, setError] = useState<string | null>(null)
   const nav = useNavigate()
   const [params] = useSearchParams()
   const redirect = params.get('redirect') || '/dashboard'
+  const [message, setMessage] = useState<string | null>(null)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
 
   async function callSignIn() {
     setError(null)
@@ -20,6 +24,36 @@ export default function Login() {
     }
   }
 
+  async function onEmailPasswordSignIn(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    setMessage(null)
+    setLoading(true)
+    try {
+      await signInWithEmailAndPassword(auth, email, password)
+      nav(redirect)
+    } catch (e: any) {
+      setError(e?.message || 'Sign-in failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function onForgotPassword() {
+    setError(null)
+    setMessage(null)
+    if (!email) {
+      setError('Enter your email above to reset your password.')
+      return
+    }
+    try {
+      await sendPasswordResetEmail(auth, email)
+      setMessage('Password reset email sent. Check your inbox.')
+    } catch (e: any) {
+      setError(e?.message || 'Failed to send reset email')
+    }
+  }
+
   return (
     <div className="mx-auto max-w-sm pt-24">
       {error && (
@@ -27,6 +61,52 @@ export default function Login() {
           {error}
         </div>
       )}
+      {message && (
+        <div className="mb-3 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          {message}
+        </div>
+      )}
+
+      <form onSubmit={onEmailPasswordSignIn} className="space-y-3 rounded-lg border border-neutral-800/70 bg-neutral-950/60 p-4">
+        <div>
+          <label className="block text-xs text-neutral-400 mb-1">Email</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white"
+            placeholder="you@example.com"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-neutral-400 mb-1">Password</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white"
+            placeholder="••••••••"
+            required
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <button
+            type="submit"
+            disabled={loading}
+            className="rounded-md border border-blue-700 bg-blue-600/90 px-3 py-2 text-sm text-white hover:bg-blue-600 disabled:opacity-50"
+          >
+            {loading ? 'Signing in…' : 'Sign in'}
+          </button>
+          <button type="button" onClick={onForgotPassword} className="text-xs text-neutral-400 hover:text-neutral-200">
+            Forgot password?
+          </button>
+        </div>
+        <div className="text-xs text-neutral-400">
+          Don’t have an account?{' '}
+          <Link to={`/signup?redirect=${encodeURIComponent(redirect)}`} className="text-neutral-200 underline">Sign up</Link>
+        </div>
+      </form>
       <button
         onClick={callSignIn}
         className="mt-4 inline-flex items-center justify-center gap-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 active:shadow"
