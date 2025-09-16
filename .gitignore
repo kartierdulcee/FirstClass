@@ -26,4 +26,4 @@ dist-ssr
 .vercel
 
 # Local experiments
-clipyr
+# (clipyr now tracked for deployment)

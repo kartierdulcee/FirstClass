@@ -1,12 +1,7 @@
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import React from 'react'
 import { useClerk, useUser } from '../auth/firebaseAuth'
-import {
-  LayoutDashboard,
-  FileText,
-  BarChart2,
-  Settings,
-} from 'lucide-react'
+import { LayoutDashboard, FileText, BarChart2, Settings, Clapperboard } from 'lucide-react'
 import FounderBanner from '../components/FounderBanner'
 import AssistantWidget from '../components/AssistantWidget'
 
@@ -20,6 +15,7 @@ export default function DashboardLayout() {
     { name: 'Overview', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Content', path: '/dashboard/content', icon: FileText },
     { name: 'Content Lab', path: '/dashboard/content-lab', icon: FileText },
+    { name: 'Video Clipper', path: '/dashboard/video-clipper', icon: Clapperboard },
     { name: 'Analytics', path: '/dashboard/analytics', icon: BarChart2 },
     { name: 'Settings', path: '/dashboard/settings', icon: Settings },
   ]

@@ -13,6 +13,7 @@ import Onboarding from './pages/Onboarding'
 import DashboardHome from './pages/dashboard/Home'
 import Content from './pages/dashboard/Content'
 import ContentLab from './pages/dashboard/ContentLab'
+import VideoClipper from './pages/dashboard/VideoClipper'
 import Analytics from './pages/dashboard/Analytics'
 import Settings from './pages/dashboard/Settings'
 
@@ -47,6 +48,7 @@ export const router = createBrowserRouter([
           { index: true, element: <DashboardHome /> },
           { path: 'content', element: <Content /> },
           { path: 'content-lab', element: <ContentLab /> },
+          { path: 'video-clipper', element: <VideoClipper /> },
           { path: 'analytics', element: <Analytics /> },
           { path: 'settings', element: <Settings /> },
           { path: '*', element: <Navigate to="/dashboard" replace /> },
