@@ -9,10 +9,10 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt ./
+COPY clipyr/requirements.txt ./requirements.txt
 RUN pip install --upgrade pip \
     && pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
 
-COPY . ./
+COPY clipyr/. ./
 
 CMD ["python", "app.py"]
