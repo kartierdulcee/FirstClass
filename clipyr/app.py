@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import tempfile
@@ -439,6 +440,7 @@ def process_video(
     add_subtitles,
 ):
     clipper = AIVideoClipper()
+    empty_json = json.dumps([], indent=2)
 
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -447,37 +449,37 @@ def process_video(
 
             if input_type == "Upload Video File":
                 if not video_file:
-                    return "Please upload a video file.", [], []
+                    return "Please upload a video file.", [], empty_json
                 # `gr.File` with type="filepath" returns the path directly
                 video_path = video_file
                 video_metadata = {"title": os.path.basename(video_path), "source": "upload"}
             elif input_type == "YouTube URL":
                 if not youtube_url or not youtube_url.strip():
-                    return "Please enter a YouTube URL.", [], []
+                    return "Please enter a YouTube URL.", [], empty_json
                 try:
                     video_path, video_metadata = clipper.download_youtube_video(
                         youtube_url.strip(), temp_dir
                     )
                     video_metadata["source"] = "youtube"
                 except Exception as exc:
-                    return f"Error downloading YouTube video: {exc}", [], []
+                    return f"Error downloading YouTube video: {exc}", [], empty_json
             else:
-                return "Please select an input method.", [], []
+                return "Please select an input method.", [], empty_json
 
             if not video_path or not os.path.exists(video_path):
-                return "Video file not found or invalid.", [], []
+                return "Video file not found or invalid.", [], empty_json
 
             print("Extracting audio features...")
             audio_features = clipper.extract_audio_features(video_path)
 
             segments = clipper.transcribe_video(video_path)
             if not segments:
-                return "Could not transcribe video. Please check the audio quality.", [], []
+                return "Could not transcribe video. Please check the audio quality.", [], empty_json
 
             best_moments = clipper.find_best_moments(segments, audio_features, clip_duration)
             best_moments = best_moments[:num_clips]
             if not best_moments:
-                return "No suitable clips found. Try adjusting parameters.", [], []
+                return "No suitable clips found. Try adjusting parameters.", [], empty_json
 
             output_videos: List[str] = []
             clip_info: List[Dict] = []
@@ -519,9 +521,9 @@ def process_video(
                 f"✅ Successfully created {len(output_videos)} clips from: "
                 f"{video_metadata.get('title', 'video')}"
             )
-            return success_msg, output_videos, clip_info
+            return success_msg, output_videos, json.dumps(clip_info, indent=2)
     except Exception as exc:
-        return f"Error processing video: {exc}", [], []
+        return f"Error processing video: {exc}", [], empty_json
 
 
 def create_interface() -> gr.Blocks:
@@ -611,7 +613,12 @@ def create_interface() -> gr.Blocks:
                     show_download_button=True,
                 )
 
-        info_output = gr.JSON(label="Clip Analysis", visible=True)
+        info_output = gr.Textbox(
+            label="Clip Analysis (JSON)",
+            interactive=False,
+            lines=10,
+            visible=True,
+        )
 
         def update_input_visibility(choice: str):
             if choice == "Upload Video File":
