@@ -3,14 +3,16 @@ import re
 import tempfile
 from typing import Dict, List, Tuple
 
+import emoji
 import gradio as gr
-import librosa  # type: ignore
-import moviepy.editor as mp
+import librosa
+import moviepy as mp
 import numpy as np
-import torch  # type: ignore
-import whisper  # type: ignore
-import yt_dlp  # type: ignore
-from transformers import AutoModel, AutoTokenizer, pipeline  # noqa: F401  # allow future reuse
+import torch
+import whisper
+import yt_dlp
+from textblob import TextBlob  # noqa: F401  # retained for potential future use
+from transformers import AutoModel, AutoTokenizer, pipeline  # noqa: F401  # allow extension
 
 
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
@@ -21,6 +23,7 @@ class AIVideoClipper:
 
     def __init__(self) -> None:
         print("Loading models...")
+        # Use base model to balance accuracy and resource usage
         self.whisper_model = whisper.load_model("base")
         self.sentiment_analyzer = pipeline(
             "sentiment-analysis",
@@ -157,6 +160,7 @@ class AIVideoClipper:
     @staticmethod
     def extract_audio_features(video_path: str) -> Dict:
         """Extract audio features from a video file for engagement analysis."""
+        # moviepy writes audio track into a temporary wav for librosa
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp_audio:
             temp_audio_path = tmp_audio.name
 
@@ -358,7 +362,7 @@ class AIVideoClipper:
         txt_clip = None
         final_video = None
         try:
-            segment_clip = base_clip.subclip(start_time, end_time)
+            segment_clip = base_clip.subclipped(start_time, end_time)
 
             target_width = 1080
             target_height = 1920
@@ -366,12 +370,12 @@ class AIVideoClipper:
             scale_w = target_width / segment_clip.w
             scale_h = target_height / segment_clip.h
             scale = min(scale_w, scale_h)
-            video_resized = segment_clip.resize(newsize=scale)
+            video_resized = segment_clip.resized(new_size=scale)
 
             background = mp.ColorClip(
                 size=(target_width, target_height), color=(0, 0, 0)
-            ).set_duration(video_resized.duration)
-            video_centered = video_resized.set_position("center")
+            ).with_duration(video_resized.duration)
+            video_centered = video_resized.with_position(("center", "center"))
             base_composite = mp.CompositeVideoClip(
                 [background, video_centered], size=(target_width, target_height)
             )
@@ -383,15 +387,15 @@ class AIVideoClipper:
                 txt_clip = (
                     mp.TextClip(
                         text=text_with_emojis,
-                        fontsize=60,
+                        font_size=60,
                         color="white",
                         stroke_color="black",
                         stroke_width=3,
                         size=(target_width - 100, None),
                         method="caption",
                     )
-                    .set_position(("center", 0.8), relative=True)
-                    .set_duration(final_video.duration)
+                    .with_position(("center", 0.8), relative=True)
+                    .with_duration(final_video.duration)
                 )
                 final_video = mp.CompositeVideoClip(
                     [final_video, txt_clip], size=(target_width, target_height)
@@ -444,9 +448,8 @@ def process_video(
             if input_type == "Upload Video File":
                 if not video_file:
                     return "Please upload a video file.", [], []
-                video_path = video_file if isinstance(video_file, str) else getattr(video_file, "name", None)
-                if not video_path:
-                    return "Unable to read uploaded file path.", [], []
+                # `gr.File` with type="filepath" returns the path directly
+                video_path = video_file
                 video_metadata = {"title": os.path.basename(video_path), "source": "upload"}
             elif input_type == "YouTube URL":
                 if not youtube_url or not youtube_url.strip():
@@ -670,7 +673,8 @@ def create_interface() -> gr.Blocks:
 def main() -> None:
     demo = create_interface()
     port = int(os.environ.get("PORT", "7860"))
-    demo.launch(server_name="0.0.0.0", server_port=port, share=False)
+    enable_share = os.environ.get("GRADIO_SHARE", "true").lower() == "true"
+    demo.launch(server_name="0.0.0.0", server_port=port, share=enable_share)
 
 
 if __name__ == "__main__":
