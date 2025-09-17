@@ -681,7 +681,12 @@ def main() -> None:
     demo = create_interface()
     port = int(os.environ.get("PORT", "7860"))
     enable_share = os.environ.get("GRADIO_SHARE", "true").lower() == "true"
-    demo.launch(server_name="0.0.0.0", server_port=port, share=enable_share)
+    demo.launch(
+        server_name="0.0.0.0",
+        server_port=port,
+        share=enable_share,
+        show_api=False,
+    )
 
 
 if __name__ == "__main__":
