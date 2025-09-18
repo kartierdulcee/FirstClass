@@ -1,310 +1,30 @@
 import json
 import os
 import re
+import shutil
 import tempfile
+import threading
+import time
+import uuid
+from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Dict, List, Tuple
 
 import emoji
-import gradio as gr
-from gradio_client import utils as gradio_client_utils
 import librosa
 import moviepy as mp
 import numpy as np
 import torch
 import whisper
 import yt_dlp
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
 from textblob import TextBlob  # noqa: F401  # retained for potential future use
 from transformers import AutoModel, AutoTokenizer, pipeline  # noqa: F401  # allow extension
 
 
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
-
-
-def _patch_gradio_schema_bug() -> None:
-    """Work around Gradio OpenAPI generator failing on boolean schemas."""
-
-    original = gradio_client_utils._json_schema_to_python_type
-
-    def _safe_json_schema_to_python_type(schema, defs=None):  # type: ignore[override]
-        if isinstance(schema, bool):
-            return "Literal[True]" if schema else "Literal[False]"
-        try:
-            return original(schema, defs)
-        except TypeError as exc:
-            if "argument of type 'bool' is not iterable" in str(exc):
-                return "Literal[True]" if schema else "Literal[False]"
-            raise
-
-    gradio_client_utils._json_schema_to_python_type = _safe_json_schema_to_python_type
-
-
-_patch_gradio_schema_bug()
-
-
-CUSTOM_CSS = """
-:root {
-    --brand-500: #38bdf8;
-    --brand-400: #60a5fa;
-    --brand-600: #0ea5e9;
-    --surface-900: rgba(8, 11, 22, 0.94);
-    --surface-800: rgba(13, 18, 32, 0.9);
-    --surface-border: rgba(100, 116, 139, 0.22);
-    --text-primary: #e2e8f0;
-    --text-muted: rgba(226, 232, 240, 0.68);
-    --radius-xl: 24px;
-}
-
-body {
-    background: radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.08), transparent 55%),
-        radial-gradient(circle at 80% 0%, rgba(14, 165, 233, 0.07), transparent 45%),
-        #020617;
-    color: var(--text-primary);
-}
-
-.gradio-container {
-    background: none;
-    color: var(--text-primary);
-    max-width: 1240px !important;
-    margin: 0 auto;
-    padding: 32px 32px 64px;
-}
-
-.gradio-container .block.gradio-box,
-.gradio-container .tabs {
-    background: none;
-    border: none;
-    box-shadow: none;
-}
-
-.clipper-hero {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 28px;
-    padding: 36px 40px;
-    margin-bottom: 32px;
-    border-radius: var(--radius-xl);
-    background: linear-gradient(135deg, rgba(14, 165, 233, 0.16), rgba(2, 6, 23, 0.72));
-    border: 1px solid rgba(56, 189, 248, 0.22);
-    position: relative;
-    overflow: hidden;
-}
-
-.clipper-hero::after {
-    content: "";
-    position: absolute;
-    inset: -30% auto auto -20%;
-    width: 360px;
-    height: 360px;
-    background: radial-gradient(circle, rgba(96, 165, 250, 0.22), transparent 70%);
-    filter: blur(18px);
-    pointer-events: none;
-}
-
-.clipper-hero h1 {
-    font-size: clamp(2rem, 3vw, 2.6rem);
-    font-weight: 700;
-    margin-bottom: 12px;
-    color: #f8fafc;
-}
-
-.clipper-hero p {
-    margin: 0;
-    color: var(--text-muted);
-    line-height: 1.6;
-}
-
-.clipper-hero .eyebrow {
-    text-transform: uppercase;
-    letter-spacing: 0.32em;
-    font-size: 0.72rem;
-    color: rgba(148, 163, 184, 0.85);
-    margin-bottom: 18px;
-}
-
-.metric-grid {
-    display: grid;
-    gap: 14px;
-}
-
-.metric-card {
-    padding: 18px 20px;
-    border-radius: 18px;
-    background: rgba(8, 47, 73, 0.55);
-    border: 1px solid rgba(56, 189, 248, 0.32);
-    box-shadow: 0 18px 40px rgba(2, 132, 199, 0.22);
-}
-
-.metric-value {
-    font-size: 1.65rem;
-    font-weight: 600;
-    color: #f0f9ff;
-    display: block;
-}
-
-.metric-label {
-    font-size: 0.9rem;
-    color: rgba(224, 242, 254, 0.78);
-}
-
-.layout {
-    display: grid;
-    gap: 28px;
-}
-
-.panel {
-    background: var(--surface-900);
-    border-radius: var(--radius-xl);
-    border: 1px solid var(--surface-border);
-    padding: 28px;
-    backdrop-filter: blur(22px);
-    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.45);
-}
-
-.panel-heading {
-    margin-bottom: 18px;
-}
-
-.panel-heading h3,
-.panel-heading h4,
-.panel-heading p {
-    margin: 0;
-    font-weight: 600;
-    color: #f8fafc;
-}
-
-.panel h2 {
-    font-size: 1.2rem;
-    margin-bottom: 16px;
-    font-weight: 600;
-    color: #f8fafc;
-}
-
-.input-method .wrap {
-    display: flex;
-    gap: 12px;
-}
-
-.input-method label {
-    flex: 1;
-    border-radius: 14px;
-    border: 1px solid transparent;
-    background: rgba(15, 23, 42, 0.78);
-    padding: 12px 16px;
-    font-weight: 500;
-    color: var(--text-muted);
-    transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
-}
-
-.input-method label:hover {
-    transform: translateY(-1px);
-    border-color: rgba(96, 165, 250, 0.5);
-    color: #e0f2fe;
-}
-
-.input-method input[type="radio"]:checked + label {
-    border-color: rgba(56, 189, 248, 0.8);
-    background: rgba(8, 47, 73, 0.75);
-    color: #f8fafc;
-    box-shadow: 0 12px 30px rgba(14, 165, 233, 0.22);
-}
-
-.file-input .upload-box,
-.youtube-input textarea,
-.status-box textarea,
-.json-panel textarea {
-    background: rgba(15, 23, 42, 0.78) !important;
-    border: 1px solid rgba(148, 163, 184, 0.25) !important;
-    border-radius: 16px !important;
-    color: var(--text-primary) !important;
-}
-
-.slider-control .wrap {
-    background: rgba(15, 23, 42, 0.65);
-    border-radius: 16px;
-    padding: 16px 18px;
-    border: 1px solid rgba(148, 163, 184, 0.16);
-}
-
-.checkbox-row label {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    border: 1px solid rgba(148, 163, 184, 0.16);
-    border-radius: 14px;
-    padding: 12px 16px;
-    background: rgba(15, 23, 42, 0.68);
-}
-
-.helper-text {
-    color: var(--text-muted);
-}
-
-.primary-btn button {
-    background: linear-gradient(135deg, var(--brand-500), var(--brand-600));
-    border: none;
-    color: #0f172a;
-    font-weight: 600;
-    border-radius: 999px;
-    padding: 14px 22px;
-    font-size: 1rem;
-    transition: transform 0.18s ease, box-shadow 0.18s ease;
-}
-
-.primary-btn button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 14px 38px rgba(14, 165, 233, 0.32);
-}
-
-.primary-btn button:active {
-    transform: translateY(0);
-}
-
-.clips-gallery .thumbnail {
-    border-radius: 18px !important;
-    border: 1px solid rgba(56, 189, 248, 0.2);
-    box-shadow: 0 16px 50px rgba(8, 47, 73, 0.35);
-}
-
-.json-panel textarea {
-    min-height: 220px;
-    font-family: "JetBrains Mono", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    font-size: 0.85rem;
-}
-
-.tips-accordion .label,
-.tips-accordion .panel {
-    background: rgba(15, 23, 42, 0.72);
-    border-radius: 16px;
-    border: 1px solid rgba(148, 163, 184, 0.18);
-}
-
-.tips-accordion .label h4 {
-    color: #f8fafc;
-}
-
-.tips-accordion .panel {
-    padding: 0 0 18px;
-}
-
-.tips-accordion .panel p,
-.tips-accordion .panel li {
-    color: var(--text-muted);
-}
-
-@media (max-width: 768px) {
-    .gradio-container {
-        padding: 20px 16px 48px;
-    }
-
-    .clipper-hero {
-        padding: 28px 24px;
-    }
-
-    .panel {
-        padding: 24px;
-    }
-}
-"""
 
 
 class AIVideoClipper:
@@ -445,6 +165,8 @@ class AIVideoClipper:
                 return video_path, metadata
         except Exception as exc:  # pragma: no cover - network interaction
             raise RuntimeError(f"Failed to download YouTube video: {exc}") from exc
+
+        raise RuntimeError("Unable to download YouTube video")
 
     @staticmethod
     def extract_audio_features(video_path: str) -> Dict:
@@ -719,292 +441,329 @@ class AIVideoClipper:
         return output_path
 
 
-def process_video(
-    input_type,
-    video_file,
-    youtube_url,
-    clip_duration,
-    num_clips,
-    add_subtitles,
-):
-    clipper = AIVideoClipper()
-    empty_json = json.dumps([], indent=2)
+def generate_clips(
+    *,
+    clipper: AIVideoClipper,
+    input_type: str,
+    uploaded_path: str | None,
+    youtube_url: str | None,
+    clip_duration: int,
+    num_clips: int,
+    add_subtitles: bool,
+    output_dir: str,
+) -> Tuple[str, List[Dict], Dict]:
+    """Core processing routine reused by API handlers."""
 
-    try:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            video_path: str | None = None
-            video_metadata: Dict = {}
+    clip_duration = max(15, min(int(clip_duration), 120))
+    num_clips = max(1, min(int(num_clips), 5))
+    os.makedirs(output_dir, exist_ok=True)
 
-            if input_type == "Upload Video File":
-                if not video_file:
-                    return "Please upload a video file.", [], empty_json
-                # `gr.File` with type="filepath" returns the path directly
-                video_path = video_file
-                video_metadata = {"title": os.path.basename(video_path), "source": "upload"}
-            elif input_type == "YouTube URL":
-                if not youtube_url or not youtube_url.strip():
-                    return "Please enter a YouTube URL.", [], empty_json
-                try:
-                    video_path, video_metadata = clipper.download_youtube_video(
-                        youtube_url.strip(), temp_dir
-                    )
-                    video_metadata["source"] = "youtube"
-                except Exception as exc:
-                    return f"Error downloading YouTube video: {exc}", [], empty_json
-            else:
-                return "Please select an input method.", [], empty_json
+    with tempfile.TemporaryDirectory() as temp_dir:
+        video_path: str | None = None
+        video_metadata: Dict = {}
 
-            if not video_path or not os.path.exists(video_path):
-                return "Video file not found or invalid.", [], empty_json
-
-            print("Extracting audio features...")
-            audio_features = clipper.extract_audio_features(video_path)
-
-            segments = clipper.transcribe_video(video_path)
-            if not segments:
-                return "Could not transcribe video. Please check the audio quality.", [], empty_json
-
-            best_moments = clipper.find_best_moments(segments, audio_features, clip_duration)
-            best_moments = best_moments[:num_clips]
-            if not best_moments:
-                return "No suitable clips found. Try adjusting parameters.", [], empty_json
-
-            output_videos: List[str] = []
-            clip_info: List[Dict] = []
-
-            for idx, moment in enumerate(best_moments, start=1):
-                output_path = os.path.join(temp_dir, f"clip_{idx}.mp4")
-                try:
-                    clipper.create_clip(
-                        video_path,
-                        moment["start"],
-                        moment["end"],
-                        moment["text"],
-                        output_path,
-                        add_subtitles,
-                    )
-                    final_path = os.path.abspath(f"clip_{idx}_{hash(video_path)}_{idx}.mp4")
-                    os.replace(output_path, final_path)
-                    output_videos.append(final_path)
-                    clip_info.append(
-                        {
-                            "clip_number": idx,
-                            "start_time": f"{moment['start']:.1f}s",
-                            "end_time": f"{moment['end']:.1f}s",
-                            "duration": f"{moment['duration']:.1f}s",
-                            "virality_score": f"{moment['virality_score']:.2f}/10",
-                            "text_preview": (
-                                moment["text"][:100] + "..."
-                                if len(moment["text"]) > 100
-                                else moment["text"]
-                            ),
-                            "source_video": video_metadata.get("title", "Unknown"),
-                        }
-                    )
-                except Exception as exc:
-                    print(f"Error creating clip {idx}: {exc}")
-                    continue
-
-            success_msg = (
-                f"✅ Successfully created {len(output_videos)} clips from: "
-                f"{video_metadata.get('title', 'video')}"
-            )
-            return success_msg, output_videos, json.dumps(clip_info, indent=2)
-    except Exception as exc:
-        return f"Error processing video: {exc}", [], empty_json
-
-
-def create_interface() -> gr.Blocks:
-    with gr.Blocks(
-        title="AI Video Clipper",
-        theme=gr.themes.Soft(),
-        css=CUSTOM_CSS,
-    ) as demo:
-        gr.HTML(
-            """
-            <section class="clipper-hero">
-              <div>
-                <p class="eyebrow">FirstClass AI</p>
-                <h1>AI Video Clipper</h1>
-                <p>Turn deep-dive videos into scroll-stopping vertical clips the moment inspiration hits. Upload raw footage or pull from YouTube — we handle transcription, scoring, and delivery.</p>
-              </div>
-              <div class="metric-grid">
-                <div class="metric-card">
-                  <span class="metric-value">+5x</span>
-                  <span class="metric-label">Faster clip ideation</span>
-                </div>
-                <div class="metric-card">
-                  <span class="metric-value">92%</span>
-                  <span class="metric-label">Avg. virality match</span>
-                </div>
-                <div class="metric-card">
-                  <span class="metric-value">4K</span>
-                  <span class="metric-label">Clips shipped this month</span>
-                </div>
-              </div>
-            </section>
-            """
-        )
-
-        with gr.Row(elem_classes=["layout"]):
-            with gr.Column(scale=7, min_width=380, elem_classes=["panel", "input-panel"]):
-                gr.Markdown("### Select Source", elem_classes=["panel-heading"])
-
-                input_type = gr.Radio(
-                    choices=["Upload Video File", "YouTube URL"],
-                    value="Upload Video File",
-                    label="",
-                    interactive=True,
-                    elem_classes=["input-method"],
+        if input_type == "Upload Video File":
+            if not uploaded_path or not os.path.exists(uploaded_path):
+                raise ValueError("Video file not found. Please upload a valid file.")
+            video_path = uploaded_path
+            video_metadata = {
+                "title": os.path.basename(video_path),
+                "source": "upload",
+            }
+        elif input_type == "YouTube URL":
+            if not youtube_url or not youtube_url.strip():
+                raise ValueError("Please enter a YouTube URL.")
+            try:
+                video_path, video_metadata = clipper.download_youtube_video(
+                    youtube_url.strip(), temp_dir
                 )
+                video_metadata["source"] = "youtube"
+            except Exception as exc:  # pragma: no cover - network interaction
+                raise ValueError(f"Error downloading YouTube video: {exc}") from exc
+        else:
+            raise ValueError("Unsupported input type. Choose upload or YouTube.")
 
-                video_input = gr.File(
-                    label="Upload Video",
-                    file_types=[".mp4", ".avi", ".mov", ".mkv", ".webm"],
-                    type="filepath",
-                    visible=True,
-                    elem_classes=["file-input"],
-                )
+        if not video_path or not os.path.exists(video_path):
+            raise ValueError("Video file not found or invalid.")
 
-                youtube_input = gr.Textbox(
-                    label="YouTube URL",
-                    placeholder="https://www.youtube.com/watch?v=...",
-                    visible=False,
-                    info="Paste any public YouTube link. We cap downloads at 720p for speed.",
-                    elem_classes=["youtube-input"],
-                )
+        print("Extracting audio features...")
+        audio_features = clipper.extract_audio_features(video_path)
 
-                url_examples = gr.Markdown(
-                    """
-                    **Supported formats**
-                    - `https://www.youtube.com/watch?v=VIDEO_ID`
-                    - `https://youtu.be/VIDEO_ID`
-                    - `https://www.youtube.com/embed/VIDEO_ID`
-                    """,
-                    visible=False,
-                    elem_classes=["helper-text"],
-                )
+        segments = clipper.transcribe_video(video_path)
+        if not segments:
+            raise ValueError("Could not transcribe video. Please check the audio quality.")
 
-                with gr.Row(elem_classes=["slider-stack"]):
-                    clip_duration = gr.Slider(
-                        minimum=15,
-                        maximum=90,
-                        value=30,
-                        step=5,
-                        label="Target clip duration (sec)",
-                        elem_classes=["slider-control"],
-                    )
-                    num_clips = gr.Slider(
-                        minimum=1,
-                        maximum=5,
-                        value=3,
-                        step=1,
-                        label="How many moments",
-                        elem_classes=["slider-control"],
-                    )
+        best_moments = clipper.find_best_moments(segments, audio_features, clip_duration)
+        best_moments = best_moments[:num_clips]
+        if not best_moments:
+            raise ValueError("No suitable clips found. Try adjusting parameters.")
 
-                add_subtitles = gr.Checkbox(
-                    label="Auto-generate subtitles with emoji emphasis",
-                    value=True,
-                    elem_classes=["checkbox-row"],
-                )
+        clip_info: List[Dict] = []
 
-                process_btn = gr.Button(
-                    "Generate highlight clips",
-                    variant="primary",
-                    elem_classes=["primary-btn"],
-                )
-
-            with gr.Column(scale=5, min_width=320, elem_classes=["panel", "output-panel"]):
-                gr.Markdown("### Output", elem_classes=["panel-heading"])
-                status_output = gr.Textbox(
-                    label="Status",
-                    interactive=False,
-                    lines=3,
-                    elem_classes=["status-box"],
-                )
-                clips_output = gr.Gallery(
-                    label="Generated clips",
-                    show_label=True,
-                    columns=1,
-                    rows=3,
-                    height="auto",
-                    allow_preview=True,
-                    show_download_button=True,
-                    elem_classes=["clips-gallery"],
-                )
-                info_output = gr.Textbox(
-                    label="Clip analysis JSON",
-                    interactive=False,
-                    lines=10,
-                    elem_classes=["json-panel"],
-                )
-
-        with gr.Accordion(
-            "Production tips", open=False, elem_classes=["tips-accordion"]
-        ):
-            gr.Markdown(
-                """
-                **File prep**  
-                • Aim for steady speech and limited background noise.  
-                • Keep uploads under 2 hours for best transcription throughput.
-
-                **YouTube ingest**  
-                • Public or unlisted links only. We skip age-restricted content.  
-                • Livestreams and premieres are supported once the VOD is available.
-
-                **Optimization**  
-                • 25–65 second clips tend to rank highest on short-form platforms.  
-                • Toggle subtitles off if you already have branded captions.
-                """
-            )
-
-        def update_input_visibility(choice: str):
-            if choice == "Upload Video File":
-                return (
-                    gr.update(visible=True),
-                    gr.update(visible=False),
-                    gr.update(visible=False),
-                )
-            return (
-                gr.update(visible=False),
-                gr.update(visible=True),
-                gr.update(visible=True),
-            )
-
-        input_type.change(
-            update_input_visibility,
-            inputs=[input_type],
-            outputs=[video_input, youtube_input, url_examples],
-        )
-
-        process_btn.click(
-            process_video,
-            inputs=[
-                input_type,
-                video_input,
-                youtube_input,
-                clip_duration,
-                num_clips,
+        for idx, moment in enumerate(best_moments, start=1):
+            temp_output = os.path.join(temp_dir, f"clip_{idx}.mp4")
+            clipper.create_clip(
+                video_path,
+                moment["start"],
+                moment["end"],
+                moment["text"],
+                temp_output,
                 add_subtitles,
-            ],
-            outputs=[status_output, clips_output, info_output],
+            )
+            final_path = os.path.join(output_dir, f"clip_{idx}.mp4")
+            shutil.move(temp_output, final_path)
+            clip_info.append(
+                {
+                    "clip_number": idx,
+                    "start_time": float(moment["start"]),
+                    "end_time": float(moment["end"]),
+                    "duration": float(moment["duration"]),
+                    "virality_score": float(moment["virality_score"]),
+                    "text_preview": (
+                        moment["text"][:200] + "..."
+                        if len(moment["text"]) > 200
+                        else moment["text"]
+                    ),
+                    "source_video": video_metadata.get("title", "Unknown"),
+                    "file_name": os.path.basename(final_path),
+                }
+            )
+
+        status_msg = (
+            f"Successfully created {len(clip_info)} clip(s) from "
+            f"{video_metadata.get('title', 'video')}"
         )
+        return status_msg, clip_info, video_metadata
 
-    return demo
+
+def _parse_bool(value: str | bool | None, default: bool = True) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return default
+    return str(value).lower() in {"1", "true", "yes", "on"}
 
 
-def main() -> None:
-    demo = create_interface()
-    port = int(os.environ.get("PORT", "7860"))
-    enable_share = os.environ.get("GRADIO_SHARE", "true").lower() == "true"
-    demo.launch(
-        server_name="0.0.0.0",
-        server_port=port,
-        share=enable_share,
-        show_api=False,
+def _ensure_job_root() -> Path:
+    job_root = Path(os.environ.get("CLIPPER_STORAGE_DIR", "/tmp/firstclass_clips"))
+    job_root.mkdir(parents=True, exist_ok=True)
+    return job_root
+
+
+JOB_ROOT = _ensure_job_root()
+JOB_TTL_SECONDS = int(os.environ.get("CLIPPER_JOB_TTL_SECONDS", "7200"))
+_jobs_index: Dict[str, Dict] = {}
+_jobs_lock = threading.Lock()
+
+
+app = FastAPI(title="FirstClass AI Video Clipper", version="1.0.0")
+
+allowed_origins_env = os.environ.get("CLIPPER_ALLOWED_ORIGINS", "*")
+if allowed_origins_env.strip() == "*":
+    allowed_origins = ["*"]
+else:
+    allowed_origins = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["Content-Disposition"],
+)
+
+
+CLIPPER = AIVideoClipper()
+
+
+def _register_job(job_id: str, directory: Path, metadata: Dict) -> None:
+    with _jobs_lock:
+        _jobs_index[job_id] = {
+            "dir": directory,
+            "created": datetime.utcnow(),
+            "metadata": metadata,
+        }
+
+
+def _remove_job(job_id: str) -> None:
+    with _jobs_lock:
+        data = _jobs_index.pop(job_id, None)
+    if data:
+        shutil.rmtree(data["dir"], ignore_errors=True)
+
+
+def _cleanup_worker() -> None:
+    while True:
+        time.sleep(600)
+        now = datetime.utcnow()
+        expired: List[str] = []
+        with _jobs_lock:
+            for job_id, payload in list(_jobs_index.items()):
+                if now - payload["created"] > timedelta(seconds=JOB_TTL_SECONDS):
+                    expired.append(job_id)
+                    _jobs_index.pop(job_id, None)
+        for job_id in expired:
+            directory = JOB_ROOT / job_id
+            shutil.rmtree(directory, ignore_errors=True)
+
+
+def _start_cleanup_thread() -> None:
+    thread = threading.Thread(target=_cleanup_worker, daemon=True)
+    thread.start()
+
+
+_start_cleanup_thread()
+
+
+async def _save_upload(upload: UploadFile, destination: Path) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with destination.open("wb") as buffer:
+        while chunk := await upload.read(1024 * 1024):
+            buffer.write(chunk)
+
+
+@app.get("/api/healthz")
+def healthcheck() -> Dict[str, object]:
+    with _jobs_lock:
+        job_count = len(_jobs_index)
+    return {"ok": True, "jobs_cached": job_count, "ttl_seconds": JOB_TTL_SECONDS}
+
+
+@app.post("/api/process")
+async def process_endpoint(
+    request: Request,
+    input_type: str = Form(..., description="Upload Video File or YouTube URL"),
+    clip_duration: int = Form(30, ge=15, le=120),
+    num_clips: int = Form(3, ge=1, le=5),
+    add_subtitles: bool | None = Form(True),
+    youtube_url: str | None = Form(None),
+    video_file: UploadFile | None = File(None),
+):
+    job_id = uuid.uuid4().hex
+    job_dir = JOB_ROOT / job_id
+    job_dir.mkdir(parents=True, exist_ok=True)
+
+    uploaded_path: Path | None = None
+    try:
+        if input_type == "Upload Video File":
+            if video_file is None:
+                raise HTTPException(status_code=400, detail="Please upload a video file.")
+            filename = video_file.filename or "upload.mp4"
+            uploaded_path = job_dir / filename
+            await _save_upload(video_file, uploaded_path)
+        elif input_type == "YouTube URL":
+            if not youtube_url or not youtube_url.strip():
+                raise HTTPException(status_code=400, detail="Please provide a YouTube URL.")
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported input_type provided.")
+
+        status_msg, clips, metadata = generate_clips(
+            clipper=CLIPPER,
+            input_type=input_type,
+            uploaded_path=str(uploaded_path) if uploaded_path else None,
+            youtube_url=youtube_url,
+            clip_duration=clip_duration,
+            num_clips=num_clips,
+            add_subtitles=_parse_bool(add_subtitles, True),
+            output_dir=str(job_dir),
+        )
+    except HTTPException:
+        shutil.rmtree(job_dir, ignore_errors=True)
+        raise
+    except ValueError as exc:
+        shutil.rmtree(job_dir, ignore_errors=True)
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:  # pragma: no cover - heavy pipeline
+        shutil.rmtree(job_dir, ignore_errors=True)
+        raise HTTPException(status_code=500, detail="Failed to process video") from exc
+
+    _register_job(job_id, job_dir, metadata)
+
+    clips_payload: List[Dict] = []
+    for clip in clips:
+        download_url = request.url_for(
+            "download_clip", job_id=job_id, filename=clip["file_name"]
+        )
+        clips_payload.append({**clip, "download_url": download_url})
+
+    return {
+        "job_id": job_id,
+        "status_message": status_msg,
+        "metadata": metadata,
+        "clips": clips_payload,
+        "expires_in_seconds": JOB_TTL_SECONDS,
+    }
+
+
+@app.get("/api/jobs/{job_id}")
+def get_job(job_id: str, request: Request):
+    with _jobs_lock:
+        job = _jobs_index.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    clips: List[Dict] = []
+    for file in sorted(job["dir"].glob("clip_*.mp4")):
+        download_url = request.url_for(
+            "download_clip", job_id=job_id, filename=file.name
+        )
+        clips.append({
+            "file_name": file.name,
+            "download_url": download_url,
+            "size_bytes": file.stat().st_size,
+        })
+
+    return {
+        "job_id": job_id,
+        "metadata": job["metadata"],
+        "created_at": job["created"].isoformat() + "Z",
+        "clips": clips,
+        "expires_in_seconds": max(
+            0,
+            JOB_TTL_SECONDS - int((datetime.utcnow() - job["created"]).total_seconds()),
+        ),
+    }
+
+
+@app.get("/api/jobs/{job_id}/{filename}", name="download_clip")
+def download_clip(job_id: str, filename: str):
+    with _jobs_lock:
+        job = _jobs_index.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    file_path = job["dir"] / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Clip not found")
+
+    return FileResponse(
+        file_path,
+        media_type="video/mp4",
+        filename=filename,
+    )
+
+
+@app.delete("/api/jobs/{job_id}")
+def delete_job(job_id: str):
+    with _jobs_lock:
+        exists = job_id in _jobs_index
+    if not exists:
+        raise HTTPException(status_code=404, detail="Job not found")
+    _remove_job(job_id)
+    return JSONResponse({"ok": True})
+
+
+def run() -> None:
+    import uvicorn
+
+    uvicorn.run(
+        "app:app",
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", "7860")),
+        reload=False,
     )
 
 
 if __name__ == "__main__":
-    main()
+    run()

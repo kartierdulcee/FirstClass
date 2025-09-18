@@ -3,8 +3,6 @@ title: AI Video Clipper
 emoji: 🎬
 colorFrom: purple
 colorTo: pink
-sdk: gradio
-sdk_version: 5.42.0
 app_file: app.py
 pinned: false
 license: mit
@@ -123,16 +121,19 @@ The AI evaluates clips based on:
 
 1. [Create a free Render account](https://render.com) and connect this repository.
 2. Render will detect the `render.yaml` file in the repo root. Choose **New > Blueprint Deploy** and select the repo.
-3. Set any environment variables if prompted (defaults provided in `render.yaml`).
-4. Deploy the "AI Video Clipper" web service. Render builds the Docker image using `clipyr/Dockerfile` and exposes port `7860` automatically.
-5. Once live, copy the public URL (for example `https://firstclass-ai-video-clipper.onrender.com`).
-6. In your client app, create/update the `.env` (or `.env.local`) file with `VITE_VIDEO_CLIPPER_URL=<copied URL>` and restart Vite.
-
-The dashboard page at `/dashboard/video-clipper` will now embed the hosted tool, while the "Launch Workspace" button opens the Gradio UI in a separate tab.
+3. Deploy the "AI Video Clipper" web service. Render builds the Docker image using `clipyr/Dockerfile` and starts a FastAPI app that exposes `/api/process`.
+4. Once live, copy the public base URL (for example `https://firstclass-ai-video-clipper.onrender.com`).
+5. In your client app, set `VITE_VIDEO_CLIPPER_URL=<copied URL>` and restart Vite. The dashboard now talks directly to the REST API instead of embedding Gradio.
 
 ### Local quick start
 
-This application can still run locally. Activate a virtual environment, run `pip install -r requirements.txt`, then `python app.py` and navigate to `http://localhost:7860`.
+Activate a virtual environment, run `pip install -r requirements.txt`, then start the API with:
+
+```bash
+uvicorn app:app --host 0.0.0.0 --port 7860
+```
+
+The API health check is available at `http://localhost:7860/api/healthz`, and the clip endpoint accepts `POST` requests at `/api/process`.
 
 Perfect for:
 - 📱 Content creators looking to repurpose long-form content
