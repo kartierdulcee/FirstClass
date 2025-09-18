@@ -6,6 +6,7 @@ from typing import Dict, List, Tuple
 
 import emoji
 import gradio as gr
+from gradio_client import utils as gradio_client_utils
 import librosa
 import moviepy as mp
 import numpy as np
@@ -17,6 +18,27 @@ from transformers import AutoModel, AutoTokenizer, pipeline  # noqa: F401  # all
 
 
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+
+
+def _patch_gradio_schema_bug() -> None:
+    """Work around Gradio OpenAPI generator failing on boolean schemas."""
+
+    original = gradio_client_utils._json_schema_to_python_type
+
+    def _safe_json_schema_to_python_type(schema, defs=None):  # type: ignore[override]
+        if isinstance(schema, bool):
+            return "Literal[True]" if schema else "Literal[False]"
+        try:
+            return original(schema, defs)
+        except TypeError as exc:
+            if "argument of type 'bool' is not iterable" in str(exc):
+                return "Literal[True]" if schema else "Literal[False]"
+            raise
+
+    gradio_client_utils._json_schema_to_python_type = _safe_json_schema_to_python_type
+
+
+_patch_gradio_schema_bug()
 
 
 class AIVideoClipper:
