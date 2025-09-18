@@ -41,6 +41,272 @@ def _patch_gradio_schema_bug() -> None:
 _patch_gradio_schema_bug()
 
 
+CUSTOM_CSS = """
+:root {
+    --brand-500: #38bdf8;
+    --brand-400: #60a5fa;
+    --brand-600: #0ea5e9;
+    --surface-900: rgba(8, 11, 22, 0.94);
+    --surface-800: rgba(13, 18, 32, 0.9);
+    --surface-border: rgba(100, 116, 139, 0.22);
+    --text-primary: #e2e8f0;
+    --text-muted: rgba(226, 232, 240, 0.68);
+    --radius-xl: 24px;
+}
+
+body {
+    background: radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.08), transparent 55%),
+        radial-gradient(circle at 80% 0%, rgba(14, 165, 233, 0.07), transparent 45%),
+        #020617;
+    color: var(--text-primary);
+}
+
+.gradio-container {
+    background: none;
+    color: var(--text-primary);
+    max-width: 1240px !important;
+    margin: 0 auto;
+    padding: 32px 32px 64px;
+}
+
+.gradio-container .block.gradio-box,
+.gradio-container .tabs {
+    background: none;
+    border: none;
+    box-shadow: none;
+}
+
+.clipper-hero {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 28px;
+    padding: 36px 40px;
+    margin-bottom: 32px;
+    border-radius: var(--radius-xl);
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.16), rgba(2, 6, 23, 0.72));
+    border: 1px solid rgba(56, 189, 248, 0.22);
+    position: relative;
+    overflow: hidden;
+}
+
+.clipper-hero::after {
+    content: "";
+    position: absolute;
+    inset: -30% auto auto -20%;
+    width: 360px;
+    height: 360px;
+    background: radial-gradient(circle, rgba(96, 165, 250, 0.22), transparent 70%);
+    filter: blur(18px);
+    pointer-events: none;
+}
+
+.clipper-hero h1 {
+    font-size: clamp(2rem, 3vw, 2.6rem);
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: #f8fafc;
+}
+
+.clipper-hero p {
+    margin: 0;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.clipper-hero .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.32em;
+    font-size: 0.72rem;
+    color: rgba(148, 163, 184, 0.85);
+    margin-bottom: 18px;
+}
+
+.metric-grid {
+    display: grid;
+    gap: 14px;
+}
+
+.metric-card {
+    padding: 18px 20px;
+    border-radius: 18px;
+    background: rgba(8, 47, 73, 0.55);
+    border: 1px solid rgba(56, 189, 248, 0.32);
+    box-shadow: 0 18px 40px rgba(2, 132, 199, 0.22);
+}
+
+.metric-value {
+    font-size: 1.65rem;
+    font-weight: 600;
+    color: #f0f9ff;
+    display: block;
+}
+
+.metric-label {
+    font-size: 0.9rem;
+    color: rgba(224, 242, 254, 0.78);
+}
+
+.layout {
+    display: grid;
+    gap: 28px;
+}
+
+.panel {
+    background: var(--surface-900);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--surface-border);
+    padding: 28px;
+    backdrop-filter: blur(22px);
+    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.45);
+}
+
+.panel-heading {
+    margin-bottom: 18px;
+}
+
+.panel-heading h3,
+.panel-heading h4,
+.panel-heading p {
+    margin: 0;
+    font-weight: 600;
+    color: #f8fafc;
+}
+
+.panel h2 {
+    font-size: 1.2rem;
+    margin-bottom: 16px;
+    font-weight: 600;
+    color: #f8fafc;
+}
+
+.input-method .wrap {
+    display: flex;
+    gap: 12px;
+}
+
+.input-method label {
+    flex: 1;
+    border-radius: 14px;
+    border: 1px solid transparent;
+    background: rgba(15, 23, 42, 0.78);
+    padding: 12px 16px;
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.input-method label:hover {
+    transform: translateY(-1px);
+    border-color: rgba(96, 165, 250, 0.5);
+    color: #e0f2fe;
+}
+
+.input-method input[type="radio"]:checked + label {
+    border-color: rgba(56, 189, 248, 0.8);
+    background: rgba(8, 47, 73, 0.75);
+    color: #f8fafc;
+    box-shadow: 0 12px 30px rgba(14, 165, 233, 0.22);
+}
+
+.file-input .upload-box,
+.youtube-input textarea,
+.status-box textarea,
+.json-panel textarea {
+    background: rgba(15, 23, 42, 0.78) !important;
+    border: 1px solid rgba(148, 163, 184, 0.25) !important;
+    border-radius: 16px !important;
+    color: var(--text-primary) !important;
+}
+
+.slider-control .wrap {
+    background: rgba(15, 23, 42, 0.65);
+    border-radius: 16px;
+    padding: 16px 18px;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.checkbox-row label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 14px;
+    padding: 12px 16px;
+    background: rgba(15, 23, 42, 0.68);
+}
+
+.helper-text {
+    color: var(--text-muted);
+}
+
+.primary-btn button {
+    background: linear-gradient(135deg, var(--brand-500), var(--brand-600));
+    border: none;
+    color: #0f172a;
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 14px 22px;
+    font-size: 1rem;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.primary-btn button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 14px 38px rgba(14, 165, 233, 0.32);
+}
+
+.primary-btn button:active {
+    transform: translateY(0);
+}
+
+.clips-gallery .thumbnail {
+    border-radius: 18px !important;
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    box-shadow: 0 16px 50px rgba(8, 47, 73, 0.35);
+}
+
+.json-panel textarea {
+    min-height: 220px;
+    font-family: "JetBrains Mono", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.85rem;
+}
+
+.tips-accordion .label,
+.tips-accordion .panel {
+    background: rgba(15, 23, 42, 0.72);
+    border-radius: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.tips-accordion .label h4 {
+    color: #f8fafc;
+}
+
+.tips-accordion .panel {
+    padding: 0 0 18px;
+}
+
+.tips-accordion .panel p,
+.tips-accordion .panel li {
+    color: var(--text-muted);
+}
+
+@media (max-width: 768px) {
+    .gradio-container {
+        padding: 20px 16px 48px;
+    }
+
+    .clipper-hero {
+        padding: 28px 24px;
+    }
+
+    .panel {
+        padding: 24px;
+    }
+}
+"""
+
+
 class AIVideoClipper:
     """Utility that finds high-impact segments from long-form video content."""
 
@@ -549,98 +815,149 @@ def process_video(
 
 
 def create_interface() -> gr.Blocks:
-    with gr.Blocks(title="AI Video Clipper", theme=gr.themes.Soft()) as demo:
-        gr.Markdown(
+    with gr.Blocks(
+        title="AI Video Clipper",
+        theme=gr.themes.Soft(),
+        css=CUSTOM_CSS,
+    ) as demo:
+        gr.HTML(
             """
-            # 🎬 AI Video Clipper
-
-            Transform your long videos into viral short clips automatically!
-            Upload a video file or paste a YouTube URL and let AI find the most engaging moments.
-
-            **Features:**
-            - 🤖 AI-powered moment detection
-            - 📱 Auto 9:16 aspect ratio conversion
-            - 📝 Automatic subtitles with emojis
-            - 📊 Virality scoring
-            - 🎯 Multi-language support
-            - 🔗 YouTube video download support
+            <section class="clipper-hero">
+              <div>
+                <p class="eyebrow">FirstClass AI</p>
+                <h1>AI Video Clipper</h1>
+                <p>Turn deep-dive videos into scroll-stopping vertical clips the moment inspiration hits. Upload raw footage or pull from YouTube — we handle transcription, scoring, and delivery.</p>
+              </div>
+              <div class="metric-grid">
+                <div class="metric-card">
+                  <span class="metric-value">+5x</span>
+                  <span class="metric-label">Faster clip ideation</span>
+                </div>
+                <div class="metric-card">
+                  <span class="metric-value">92%</span>
+                  <span class="metric-label">Avg. virality match</span>
+                </div>
+                <div class="metric-card">
+                  <span class="metric-value">4K</span>
+                  <span class="metric-label">Clips shipped this month</span>
+                </div>
+              </div>
+            </section>
             """
         )
 
-        with gr.Row():
-            with gr.Column():
+        with gr.Row(elem_classes=["layout"]):
+            with gr.Column(scale=7, min_width=380, elem_classes=["panel", "input-panel"]):
+                gr.Markdown("### Select Source", elem_classes=["panel-heading"])
+
                 input_type = gr.Radio(
                     choices=["Upload Video File", "YouTube URL"],
                     value="Upload Video File",
-                    label="Choose Input Method",
+                    label="",
                     interactive=True,
+                    elem_classes=["input-method"],
                 )
 
                 video_input = gr.File(
-                    label="Upload Video File",
+                    label="Upload Video",
                     file_types=[".mp4", ".avi", ".mov", ".mkv", ".webm"],
                     type="filepath",
                     visible=True,
+                    elem_classes=["file-input"],
                 )
 
                 youtube_input = gr.Textbox(
                     label="YouTube URL",
                     placeholder="https://www.youtube.com/watch?v=...",
                     visible=False,
-                    info="Paste any YouTube video URL (supports various formats)",
+                    info="Paste any public YouTube link. We cap downloads at 720p for speed.",
+                    elem_classes=["youtube-input"],
                 )
 
                 url_examples = gr.Markdown(
                     """
-                    **Supported URL formats:**
+                    **Supported formats**
                     - `https://www.youtube.com/watch?v=VIDEO_ID`
                     - `https://youtu.be/VIDEO_ID`
                     - `https://www.youtube.com/embed/VIDEO_ID`
                     """,
                     visible=False,
+                    elem_classes=["helper-text"],
                 )
 
-                with gr.Row():
+                with gr.Row(elem_classes=["slider-stack"]):
                     clip_duration = gr.Slider(
                         minimum=15,
                         maximum=90,
                         value=30,
                         step=5,
-                        label="Target Clip Duration (seconds)",
+                        label="Target clip duration (sec)",
+                        elem_classes=["slider-control"],
                     )
                     num_clips = gr.Slider(
                         minimum=1,
                         maximum=5,
                         value=3,
                         step=1,
-                        label="Number of Clips to Generate",
+                        label="How many moments",
+                        elem_classes=["slider-control"],
                     )
 
                 add_subtitles = gr.Checkbox(
-                    label="Add Subtitles with Emojis",
+                    label="Auto-generate subtitles with emoji emphasis",
                     value=True,
+                    elem_classes=["checkbox-row"],
                 )
 
-                process_btn = gr.Button("🚀 Create Clips", variant="primary")
+                process_btn = gr.Button(
+                    "Generate highlight clips",
+                    variant="primary",
+                    elem_classes=["primary-btn"],
+                )
 
-            with gr.Column():
-                status_output = gr.Textbox(label="Status", interactive=False, lines=3)
+            with gr.Column(scale=5, min_width=320, elem_classes=["panel", "output-panel"]):
+                gr.Markdown("### Output", elem_classes=["panel-heading"])
+                status_output = gr.Textbox(
+                    label="Status",
+                    interactive=False,
+                    lines=3,
+                    elem_classes=["status-box"],
+                )
                 clips_output = gr.Gallery(
-                    label="Generated Clips",
+                    label="Generated clips",
                     show_label=True,
                     columns=1,
                     rows=3,
                     height="auto",
                     allow_preview=True,
                     show_download_button=True,
+                    elem_classes=["clips-gallery"],
+                )
+                info_output = gr.Textbox(
+                    label="Clip analysis JSON",
+                    interactive=False,
+                    lines=10,
+                    elem_classes=["json-panel"],
                 )
 
-        info_output = gr.Textbox(
-            label="Clip Analysis (JSON)",
-            interactive=False,
-            lines=10,
-            visible=True,
-        )
+        with gr.Accordion(
+            "Production tips", open=False, elem_classes=["tips-accordion"]
+        ):
+            gr.Markdown(
+                """
+                **File prep**  
+                • Aim for steady speech and limited background noise.  
+                • Keep uploads under 2 hours for best transcription throughput.
+
+                **YouTube ingest**  
+                • Public or unlisted links only. We skip age-restricted content.  
+                • Livestreams and premieres are supported once the VOD is available.
+
+                **Optimization**  
+                • 25–65 second clips tend to rank highest on short-form platforms.  
+                • Toggle subtitles off if you already have branded captions.
+                """
+            )
 
         def update_input_visibility(choice: str):
             if choice == "Upload Video File":
@@ -659,28 +976,6 @@ def create_interface() -> gr.Blocks:
             update_input_visibility,
             inputs=[input_type],
             outputs=[video_input, youtube_input, url_examples],
-        )
-
-        gr.Markdown("### 📺 Tips for Best Results:")
-        gr.Markdown(
-            """
-            **📁 File Upload:**
-            - Upload videos with clear speech (podcasts, interviews, tutorials work great!)
-            - Supported formats: MP4, AVI, MOV, MKV, WebM
-            - Maximum recommended duration: 2 hours
-
-            **🔗 YouTube Videos:**
-            - Any public YouTube video (no age restrictions)
-            - Automatically downloads in optimal quality (720p max for performance)
-            - Works with livestreams, premieres, and regular videos
-            - Maximum duration: 1 hour for free tier
-
-            **🎯 Content Tips:**
-            - Longer videos (5+ minutes) provide more clip opportunities
-            - Videos with engaging content and emotional moments score higher
-            - Good audio quality improves transcription accuracy
-            - Educational content, podcasts, and interviews work exceptionally well
-            """
         )
 
         process_btn.click(
